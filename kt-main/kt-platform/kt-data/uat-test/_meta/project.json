@@ -1,0 +1,13 @@
+{
+  "id": "mmnjnmr7o03lbav6ijg",
+  "name": "UAT-TEST",
+  "client": "RetailCo",
+  "phase": "Planning",
+  "githubKeyword": "UAT",
+  "enabledSources": [
+    "github"
+  ],
+  "createdAt": "2026-03-12T14:09:18.835Z",
+  "savedAt": "2026-03-12T14:09:18.954Z",
+  "_folderName": "uat-test"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "mmoh6p6h72k86kmbzil",
+  "name": "LD-Test",
+  "client": "FinBank Ltd",
+  "phase": "Planning",
+  "githubKeyword": "finops-pipeline",
+  "enabledSources": [
+    "github"
+  ],
+  "createdAt": "2026-03-13T05:47:55.769Z",
+  "savedAt": "2026-03-13T05:47:55.774Z",
+  "_folderName": "ld-test"
+}

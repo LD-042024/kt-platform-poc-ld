@@ -1,0 +1,13 @@
+{
+  "id": "mmin6i2t6b7st805m7q",
+  "name": "Finops",
+  "client": "Custom",
+  "phase": "KT Sessions",
+  "githubKeyword": "",
+  "enabledSources": [
+    "github"
+  ],
+  "createdAt": "2026-03-09T03:49:07.205Z",
+  "savedAt": "2026-03-09T03:49:57.595Z",
+  "_folderName": "finops"
+}

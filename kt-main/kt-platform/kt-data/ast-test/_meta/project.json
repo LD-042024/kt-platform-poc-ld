@@ -1,0 +1,13 @@
+{
+  "id": "mmmtifjryikisj0wwe",
+  "name": "AST-Test",
+  "client": "LogisticsCo",
+  "phase": "KT Sessions",
+  "githubKeyword": "Test",
+  "enabledSources": [
+    "github"
+  ],
+  "createdAt": "2026-03-12T01:57:26.199Z",
+  "savedAt": "2026-03-12T01:57:26.365Z",
+  "_folderName": "ast-test"
+}

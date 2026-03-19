@@ -1,0 +1,70 @@
+{
+  "sectionId": "data_context",
+  "projectId": "mmin6i2t6b7st805m7q",
+  "projectName": "Finops",
+  "savedAt": "2026-03-09T03:49:57.598Z",
+  "items": [
+    {
+      "item": "Domain glossary & business definitions",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "domain": "Transactional",
+      "sensitivity": "Public"
+    },
+    {
+      "item": "Core entity definitions (customer, order, event…)",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "domain": "Transactional",
+      "sensitivity": "Public"
+    },
+    {
+      "item": "Data lineage narrative (source → transform → output)",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "domain": "Transactional",
+      "sensitivity": "Public"
+    },
+    {
+      "item": "Data ownership & stewardship model",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "domain": "Transactional",
+      "sensitivity": "Public"
+    },
+    {
+      "item": "Sensitive / PII data inventory",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "domain": "Transactional",
+      "sensitivity": "Public"
+    },
+    {
+      "item": "Data retention & archival policies",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "domain": "Transactional",
+      "sensitivity": "Public"
+    }
+  ],
+  "links": [],
+  "summary": {
+    "total": 6,
+    "done": 0,
+    "inProgress": 0,
+    "blocked": 0,
+    "notStarted": 6
+  }
+}

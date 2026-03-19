@@ -1,0 +1,70 @@
+{
+  "sectionId": "environment",
+  "projectId": "mmin6i2t6b7st805m7q",
+  "projectName": "Finops",
+  "savedAt": "2026-03-09T03:49:57.604Z",
+  "items": [
+    {
+      "item": "Environment overview (dev / staging / prod)",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "env": "Development",
+      "cloud": "AWS"
+    },
+    {
+      "item": "Connection strings & endpoint documentation",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "env": "Development",
+      "cloud": "AWS"
+    },
+    {
+      "item": "Secrets & credentials management process",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "env": "Development",
+      "cloud": "AWS"
+    },
+    {
+      "item": "Tool versions & compatibility matrix",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "env": "Development",
+      "cloud": "AWS"
+    },
+    {
+      "item": "Access provisioning guide for new team",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "env": "Development",
+      "cloud": "AWS"
+    },
+    {
+      "item": "VPN / network access requirements",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "env": "Development",
+      "cloud": "AWS"
+    }
+  ],
+  "links": [],
+  "summary": {
+    "total": 6,
+    "done": 0,
+    "inProgress": 0,
+    "blocked": 0,
+    "notStarted": 6
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "sectionId": "pipelines",
+  "projectId": "mmin6i2t6b7st805m7q",
+  "projectName": "Finops",
+  "savedAt": "2026-03-09T03:49:57.600Z",
+  "items": [
+    {
+      "item": "Complete pipeline/DAG inventory list",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "type": "Batch",
+      "frequency": "Real-time"
+    },
+    {
+      "item": "Pipeline dependency map & execution order",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "type": "Batch",
+      "frequency": "Real-time"
+    },
+    {
+      "item": "Schedule & trigger documentation",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "type": "Batch",
+      "frequency": "Real-time"
+    },
+    {
+      "item": "Expected runtime & SLA thresholds",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "type": "Batch",
+      "frequency": "Real-time"
+    },
+    {
+      "item": "Failure modes & retry / alerting logic",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "type": "Batch",
+      "frequency": "Real-time"
+    },
+    {
+      "item": "Data volume & growth trends",
+      "status": "Not Started",
+      "notes": "",
+      "link": "",
+      "docStatus": "—",
+      "type": "Batch",
+      "frequency": "Real-time"
+    }
+  ],
+  "links": [],
+  "summary": {
+    "total": 6,
+    "done": 0,
+    "inProgress": 0,
+    "blocked": 0,
+    "notStarted": 6
+  }
+}

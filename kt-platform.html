@@ -1,0 +1,2290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KT Platform — Data Engineering Knowledge Transfer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #f8fafc; --surface: #ffffff; --surface2: #f1f5f9;
+    --border: #e2e8f0; --border2: #cbd5e1;
+    --text: #0f172a; --text2: #334155; --text3: #64748b; --text4: #94a3b8;
+    --accent: #0d9488; --accent2: #0f766e; --accent-bg: #f0fdfa; --accent-border: #99f6e4;
+    --blue: #2563eb; --blue-bg: #eff6ff; --blue-border: #bfdbfe;
+    --amber: #d97706; --amber-bg: #fffbeb; --amber-border: #fde68a;
+    --red: #dc2626; --red-bg: #fef2f2; --red-border: #fecaca;
+    --green: #16a34a; --green-bg: #f0fdf4; --green-border: #bbf7d0;
+    --purple: #7c3aed; --purple-bg: #f5f3ff; --purple-border: #ddd6fe;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --shadow-md: 0 4px 6px rgba(0,0,0,.05), 0 2px 4px rgba(0,0,0,.04);
+    --radius: 8px; --radius-sm: 5px;
+    --font: 'Instrument Sans', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  input, select, textarea { font-family: var(--font); font-size: 13px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; outline: none; transition: border-color .15s, box-shadow .15s; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(13,148,136,.1); }
+  button { font-family: var(--font); cursor: pointer; transition: all .15s; }
+  .btn { padding: 7px 16px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; border: 1px solid transparent; display: inline-flex; align-items: center; gap: 6px; }
+  .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent2); }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-secondary { background: var(--surface); color: var(--text2); border-color: var(--border2); }
+  .btn-secondary:hover { background: var(--surface2); border-color: var(--text4); }
+  .btn-ghost { background: transparent; color: var(--text3); border-color: transparent; }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text2); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-danger { background: var(--red-bg); color: var(--red); border-color: var(--red-border); }
+  .btn-danger:hover { background: var(--red); color: #fff; }
+  .tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+  h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+  h2 { font-size: 17px; font-weight: 600; color: var(--text); }
+  h3 { font-size: 14px; font-weight: 600; color: var(--text); }
+  label { font-size: 12px; font-weight: 600; color: var(--text2); display: block; margin-bottom: 5px; letter-spacing: .01em; }
+  .form-group { margin-bottom: 14px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+  .badge-status-ns  { background: var(--surface2); color: var(--text3); border: 1px solid var(--border); }
+  .badge-status-ip  { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+  .badge-status-done { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+  .badge-status-blocked { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+  .empty-state { text-align: center; padding: 48px 24px; color: var(--text3); }
+  .empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<div id="app"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════════
+
+const PHASES = ["Planning", "KT Sessions", "Reverse KT", "Sign-off"];
+
+const CLIENT_COLORS = {
+  "Acme Corp":"#0d9488","FinBank Ltd":"#2563eb","RetailCo":"#d97706",
+  "HealthData Inc":"#7c3aed","TechStartup":"#db2777","LogisticsCo":"#ea580c","Custom":"#64748b"
+};
+
+const SECTION_DEFS = [
+  { id:"biz_context",   icon:"🏢", label:"Business Context",   group:"DOCUMENTATION",
+    desc:"Why this project exists, who depends on it, cost of failure.",
+    fields:[
+      { key:"lineOfBusiness", label:"Line of Business", type:"multiselect-custom", options:["Retail Banking","Corporate Banking","Investment Banking","Insurance","Wealth Management","Operations","Finance","Risk","Compliance","Technology","HR","Marketing","Supply Chain","Customer Service","Other"] },
+      { key:"capability",     label:"Capability Area",  type:"multiselect-custom", options:["Analytics & Reporting","Data Engineering","ML/AI","Finance","Operations","Marketing","Product","Risk & Compliance","Customer Data","Other"] },
+      { key:"priority",       label:"Priority",         type:"select",             options:["Critical","High","Medium","Low"] },
+      { key:"docStatus",      label:"Doc Status",       type:"select",             options:["—","Draft","Reviewed","Approved"] },
+    ]
+  },
+  { id:"data_context",  icon:"📦", label:"Data Context",        group:"DOCUMENTATION",
+    desc:"Domain glossary, entity definitions, data lineage narrative.",
+    fields:[
+      { key:"domain",      label:"Data Domain",      type:"multiselect-custom", options:["Transactional","Behavioural","Reference","Master Data","Analytical","Streaming","External/3rd Party"] },
+      { key:"sensitivity", label:"Data Sensitivity", type:"multiselect-custom", options:["Public","Internal","Confidential","Restricted/PII","Highly Sensitive"] },
+      { key:"docStatus",   label:"Doc Status",       type:"select",             options:["—","Draft","Reviewed","Approved"] },
+    ]
+  },
+  { id:"pipelines",     icon:"🔁", label:"Pipeline Inventory",  group:"DOCUMENTATION",
+    desc:"All pipelines, schedules, dependencies, failure behaviour.",
+    fields:[
+      { key:"type",      label:"Pipeline Type", type:"multiselect-custom", options:["Batch","Streaming","Micro-batch","API Pull","CDC","Event-triggered","dbt Model","Reverse ETL"] },
+      { key:"frequency", label:"Frequency",     type:"select-custom",      options:["Real-time","Hourly","Every 4h","Daily","Weekly","Monthly","Manual","Event-triggered"] },
+      { key:"docStatus", label:"Doc Status",    type:"select",             options:["—","Draft","Reviewed","Verified Live"] },
+    ]
+  },
+  { id:"data_sources",  icon:"🗄", label:"Data Sources",        group:"DOCUMENTATION",
+    desc:"Source systems, ingestion methods, refresh cadence, access.",
+    fields:[
+      { key:"sourceType", label:"Source Type",   type:"multiselect-custom", options:["Operational DB","Data Warehouse","REST API","GraphQL API","File/S3/GCS","Kafka/Event Stream","FTP/SFTP","SaaS Platform","Third-party Feed"] },
+      { key:"access",     label:"Access Method", type:"multiselect-custom", options:["Direct Connection","Service Account","API Key","OAuth","VPN Required","IP Whitelist","Read Replica"] },
+      { key:"docStatus",  label:"Doc Status",    type:"select",             options:["—","Draft","Reviewed","Verified"] },
+    ]
+  },
+  { id:"environment",   icon:"🌐", label:"Environment",         group:"DOCUMENTATION",
+    desc:"Dev / staging / prod configs, credentials, tool versions.",
+    fields:[
+      { key:"env",       label:"Environment",   type:"multiselect-custom", options:["Development","Staging","UAT","Production","DR / Backup","Sandbox"] },
+      { key:"cloud",     label:"Cloud/Infra",   type:"multiselect-custom", options:["AWS","GCP","Azure","On-premise","Hybrid","Multi-cloud"] },
+      { key:"docStatus", label:"Access Status", type:"select",             options:["—","Access Pending","Access Granted","Credentials Shared","Verified Working"] },
+    ]
+  },
+  { id:"infrastructure",icon:"☁️", label:"Infrastructure",      group:"DOCUMENTATION",
+    desc:"Cloud setup, orchestration platform, compute resources.",
+    fields:[
+      { key:"orchestrator", label:"Orchestrator", type:"multiselect-custom", options:["Apache Airflow","Prefect","Dagster","dbt Cloud","AWS Glue","Azure Data Factory","Google Cloud Composer","Custom/Cron","None"] },
+      { key:"compute",      label:"Compute",      type:"multiselect-custom", options:["Serverless","Kubernetes","EC2/VM","Spark Cluster","Databricks","Snowpark","BigQuery","Redshift","On-premise"] },
+      { key:"docStatus",    label:"Doc Status",   type:"select",             options:["—","Draft","Reviewed","Diagram Available"] },
+    ]
+  },
+  { id:"data_quality",  icon:"📊", label:"Data Quality",        group:"DOCUMENTATION",
+    desc:"Validation rules, SLAs, monitoring setup, known anomalies.",
+    fields:[
+      { key:"framework", label:"DQ Framework", type:"multiselect-custom", options:["Great Expectations","dbt Tests","Soda","Monte Carlo","Custom Scripts","Manual Checks","None"] },
+      { key:"slaType",   label:"SLA Type",     type:"select-custom",      options:["None defined","Best effort","T+1 (next day)","T+4h","T+1h","Near real-time","Real-time"] },
+      { key:"docStatus", label:"Doc Status",   type:"select",             options:["—","Draft","Rules Documented","Monitoring Active"] },
+    ]
+  },
+  { id:"runbooks",      icon:"📋", label:"Runbooks",            group:"DOCUMENTATION",
+    desc:"Step-by-step ops for common tasks, incident response, on-call.",
+    fields:[
+      { key:"runbookType", label:"Runbook Type", type:"multiselect-custom", options:["Incident Response","Pipeline Restart","Backfill Process","Data Correction","Access Provisioning","Monitoring Setup","Deployment","Rollback"] },
+      { key:"complexity",  label:"Complexity",   type:"select",             options:["Simple (< 5 steps)","Medium (5–15 steps)","Complex (15+ steps / branching)"] },
+      { key:"docStatus",   label:"Doc Status",   type:"select",             options:["—","Draft","Reviewed","Tested in Prod"] },
+    ]
+  },
+  { id:"known_issues",  icon:"⚠️", label:"Known Issues",        group:"DOCUMENTATION",
+    desc:"Active bugs, tech debt, workarounds, risks inherited by new team.",
+    fields:[
+      { key:"issueType", label:"Issue Type", type:"multiselect-custom", options:["Bug","Tech Debt","Performance Bottleneck","Security Concern","Data Quality Issue","Deprecated Component","Missing Documentation","Vendor Risk"] },
+      { key:"severity",  label:"Severity",   type:"select",             options:["Critical","High","Medium","Low","Informational"] },
+      { key:"docStatus", label:"Status",     type:"select",             options:["—","In Progress","Workaround Exists","Accepted Risk","Resolved","Won't Fix"] },
+    ]
+  },
+  { id:"contacts",      icon:"👥", label:"Contacts",            group:"DOCUMENTATION",
+    desc:"Who owns what, upstream/downstream owners, escalation path.",
+    fields:[
+      { key:"role",     label:"Role",         type:"multiselect-custom", options:["Data Owner","Pipeline Owner","Data Steward","On-call Engineer","Stakeholder","Upstream Source Owner","Downstream Consumer","Vendor Contact","Security/Compliance"] },
+      { key:"team",     label:"Team",         type:"multiselect-custom", options:["Data Engineering","Analytics","Data Science","Platform/Infra","Business","Product","Security","External/Vendor"] },
+      { key:"docStatus",label:"Intro Status", type:"select",             options:["—","Introduction Scheduled","Introduced","Handover Meeting Done"] },
+    ]
+  },
+  { id:"kt_sessions",   icon:"🤝", label:"KT Sessions",         group:"KT PROCESS",   isSpecial:"sessions",  desc:"Log of handover sessions — topics, attendees, open questions." },
+  { id:"reverse_kt",    icon:"🔄", label:"Reverse KT",          group:"KT PROCESS",   isSpecial:"reverseKT",
+    desc:"Topics demonstrated back by incoming team to confirm understanding.",
+    fields:[
+      { key:"complexity",  label:"Complexity", type:"select", options:["Foundational","Intermediate","Advanced","Expert"] },
+      { key:"docStatus",   label:"Status",     type:"select", options:["—","Scheduled","Demonstrated","Passed","Needs Repeat"] },
+    ]
+  },
+  { id:"day1_kit",      icon:"🚨", label:"Day 1 Kit",           group:"COMPLETION",   isSpecial:"day1",      desc:"Auto-compiled survival guide for the incoming team." },
+  { id:"signoff",       icon:"✅", label:"Sign-off",            group:"COMPLETION",   isSpecial:"signoff",   desc:"Formal handover acceptance with caveats documented." },
+];
+
+const DEFAULT_CHECKLIST_ITEMS = {
+  biz_context:   ["Business objective & problem statement","Data consumers & downstream stakeholders","SLA commitments & business impact of failure","Key business decisions this data powers","Historical context & major decisions made","Success metrics & KPIs tracked"],
+  data_context:  ["Domain glossary & business definitions","Core entity definitions (customer, order, event…)","Data lineage narrative (source → transform → output)","Data ownership & stewardship model","Sensitive / PII data inventory","Data retention & archival policies"],
+  pipelines:     ["Complete pipeline/DAG inventory list","Pipeline dependency map & execution order","Schedule & trigger documentation","Expected runtime & SLA thresholds","Failure modes & retry / alerting logic","Data volume & growth trends"],
+  data_sources:  ["Source system inventory with owners","Ingestion method per source","Refresh cadence & latency expectations","Schema documentation per source","Source system contacts & escalation","Known data quality issues per source"],
+  environment:   ["Environment overview (dev / staging / prod)","Connection strings & endpoint documentation","Secrets & credentials management process","Tool versions & compatibility matrix","Access provisioning guide for new team","VPN / network access requirements"],
+  infrastructure:["Cloud architecture overview","Orchestration platform setup","Compute & storage resources inventory","Infrastructure-as-code repo & docs","Deployment & CI/CD pipeline","Cost overview & budget owners"],
+  data_quality:  ["Data quality rules & validation logic","Quality monitoring & alerting setup","SLA definitions & breach process","Known recurring data anomalies & workarounds","Data reconciliation processes","Quality dashboard / reporting links"],
+  runbooks:      ["Pipeline failure triage & resolution","Data backfill process","Incident response playbook","On-call rotation & escalation path","Common operational tasks (restart, rerun)","Monitoring dashboards & how to read them"],
+  known_issues:  ["Critical open bugs & temporary workarounds","Tech debt backlog & priority","Known performance bottlenecks","Third-party dependency risks","Security vulnerabilities or concerns","Deprecated components still in use"],
+  contacts:      ["Outgoing team org chart & responsibilities","Upstream data source owners","Downstream consumer contacts","Vendor / third-party contacts","Escalation matrix by issue type","On-call rotation details"],
+  reverse_kt:    ["Business context & data context walkthrough","Pipeline inventory & dependency explanation","Environment setup & access walkthrough","Infrastructure & deployment demo","Runbook execution (live incident simulation)","Data quality rules & monitoring demo","End-to-end pipeline run & troubleshooting"],
+};
+
+const DEFAULT_TEMPLATES = [
+  { id:"tpl_quick",   name:"Quick Handoff",       scanDepth:"Surface",  focusAreas:["Code structure","Documentation"],    outputStyle:"Bullet points",      customContext:"",  perSection:{} },
+  { id:"tpl_full",    name:"Full DE Project",      scanDepth:"Medium",   focusAreas:["Code structure","Data inventory","Known issues","Documentation"], outputStyle:"Short paragraphs", customContext:"", perSection:{} },
+  { id:"tpl_comply",  name:"Compliance-Sensitive", scanDepth:"Surface",  focusAreas:["Data inventory","Security signals"],  outputStyle:"Short paragraphs",   customContext:"Focus on PII data, access controls, audit logs and compliance requirements.", perSection:{ data_sources:"Deep", data_context:"Deep", known_issues:"Deep" } },
+  { id:"tpl_legacy",  name:"Legacy Migration",     scanDepth:"Deep",     focusAreas:["Known issues","Code structure"],      outputStyle:"Short paragraphs",   customContext:"Focus heavily on tech debt, deprecated components, undocumented workarounds.", perSection:{ known_issues:"Deep", pipelines:"Deep", runbooks:"Deep" } },
+  { id:"tpl_onboard", name:"New Team Onboarding",  scanDepth:"Medium",   focusAreas:["Documentation","Data inventory","Code structure"], outputStyle:"Short paragraphs", customContext:"Prioritise business context, data glossary and key contacts for onboarding.", perSection:{ biz_context:"Deep", data_context:"Deep", contacts:"Deep" } },
+];
+
+// ═══════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════
+
+const STORAGE_KEY = "kt_platform_v3";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return null;
+}
+
+function saveState(state) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+}
+
+function initProjectData(projectId) {
+  const checklist = {};
+  SECTION_DEFS.forEach(sec => {
+    if (sec.isSpecial) return;
+    const items = DEFAULT_CHECKLIST_ITEMS[sec.id] || [];
+    checklist[sec.id] = items.map(item => ({
+      item, notes: "", link: "",
+      status: "Not Started",
+      ...Object.fromEntries((sec.fields || []).map(f => [f.key, f.options?.[0] || ""]))
+    }));
+  });
+  const reverseKT = (DEFAULT_CHECKLIST_ITEMS.reverse_kt || []).map(item => ({
+    item, status: "Not Started", complexity: "Intermediate",
+    demonstratedBy: "", notes: "", link: ""
+  }));
+  return {
+    id: projectId, checklist, reverseKT,
+    sessions: [],
+    signoff: { outgoingName:"", outgoingRole:"", outgoingConfirmed:false, incomingName:"", incomingRole:"", incomingConfirmed:false, caveats:"", signedAt:null },
+    agentDrafts: {},
+    agentHistory: [],
+  };
+}
+
+function initAppState() {
+  return {
+    projects: [],
+    templates: JSON.parse(JSON.stringify(DEFAULT_TEMPLATES)),
+    serverUrl: "http://localhost:3001",
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════
+
+function calcProgress(projectData) {
+  if (!projectData) return 0;
+  let total = 0, done = 0;
+  Object.values(projectData.checklist || {}).forEach(items =>
+    items.forEach(i => { total++; if (i.status === "Done") done++; })
+  );
+  (projectData.reverseKT || []).forEach(i => { total++; if (i.status === "Passed") done++; });
+  return total ? Math.round((done / total) * 100) : 0;
+}
+
+function calcSectionProgress(items) {
+  if (!items || !items.length) return 0;
+  const done = items.filter(i => i.status === "Done" || i.status === "Passed").length;
+  return Math.round((done / items.length) * 100);
+}
+
+function countBlocked(projectData) {
+  if (!projectData) return 0;
+  let n = 0;
+  Object.values(projectData.checklist || {}).forEach(items =>
+    items.forEach(i => { if (i.status === "Blocked") n++; })
+  );
+  return n;
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" });
+  } catch(e) { return iso || ""; }
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+function clientColor(name) { return CLIENT_COLORS[name] || "#64748b"; }
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+
+const h = (tag, attrs, ...children) => {
+  const el = document.createElement(tag);
+  if (attrs) {
+    Object.entries(attrs).forEach(([k, v]) => {
+      if (v === null || v === undefined || v === false) return;
+      if (k === "class") el.className = v;
+      else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+      else if (k === "style" && typeof v === "string") el.style.cssText = v;
+      else if (k.startsWith("on") && typeof v === "function") el.addEventListener(k.slice(2).toLowerCase(), v);
+      else if (k === "html") el.innerHTML = v;
+      else if (k === "text") el.textContent = v;
+      else if (k === "data") Object.entries(v).forEach(([dk, dv]) => el.dataset[dk] = dv);
+      else if (k === "checked") { el.checked = !!v; }
+      else if (k === "disabled") { el.disabled = !!v; }
+      else if (k === "rows") { el.rows = v; }
+      else if (k === "type") { el.type = v; }
+      else if (k === "placeholder") { el.placeholder = v; }
+      else if (k === "value") { /* handled below */ }
+      else el.setAttribute(k, v);
+    });
+    // Set .value as DOM property after element creation so it sticks
+    if (attrs.value !== undefined && attrs.value !== null) {
+      el.value = String(attrs.value);
+    }
+  }
+  children.flat(Infinity).forEach(c => {
+    if (c == null || c === false) return;
+    el.appendChild(typeof c === "string" || typeof c === "number" ? document.createTextNode(String(c)) : c);
+  });
+  return el;
+};
+
+function el(tag, cls, ...children) { return h(tag, { class: cls }, ...children); }
+
+function progressBar(pct, color) {
+  const c = pct === 100 ? "var(--green)" : pct > 60 ? "var(--accent)" : pct > 30 ? "var(--amber)" : "var(--text4)";
+  const wrap = el("div", "progress-wrap");
+  wrap.style.cssText = "display:flex;align-items:center;gap:8px";
+  const bar = h("div", { style: { flex:1, height:"5px", background:"var(--surface2)", borderRadius:"3px", overflow:"hidden", border:"1px solid var(--border)" } });
+  const fill = h("div", { style: { width:`${pct}%`, height:"100%", background: color||c, borderRadius:"3px", transition:"width .4s ease" } });
+  bar.appendChild(fill);
+  const lbl = h("span", { style: { fontSize:"12px", color:color||c, fontFamily:"var(--mono)", minWidth:"32px", fontWeight:500 } }, `${pct}%`);
+  wrap.appendChild(bar);
+  wrap.appendChild(lbl);
+  return wrap;
+}
+
+function statusBadge(status) {
+  const map = {
+    "Not Started":   { cls:"badge-status-ns",      label:"Not Started" },
+    "In Progress":   { cls:"badge-status-ip",      label:"In Progress" },
+    "Done":          { cls:"badge-status-done",    label:"Done" },
+    "Passed":        { cls:"badge-status-done",    label:"Passed" },
+    "Blocked":       { cls:"badge-status-blocked", label:"Blocked" },
+  };
+  const m = map[status] || map["Not Started"];
+  return h("span", { class:`tag ${m.cls}`, text: m.label });
+}
+
+// ── Multi-select with custom input ──────────────────────────
+// value is stored as comma-separated string e.g. "Batch,Streaming,Custom"
+function makeMultiSelectCustom(options, value, onChange) {
+  const selected = value ? value.split(",").map(v=>v.trim()).filter(Boolean) : [];
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:4px;min-width:0";
+
+  // Chips row
+  const chipsWrap = document.createElement("div");
+  chipsWrap.style.cssText = "display:flex;flex-wrap:wrap;gap:3px;min-height:22px";
+
+  function renderChips() {
+    chipsWrap.innerHTML = "";
+    selected.forEach((val, i) => {
+      const chip = document.createElement("span");
+      chip.style.cssText = "display:inline-flex;align-items:center;gap:3px;background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent2);border-radius:20px;padding:1px 7px 1px 8px;font-size:10px;font-weight:500;white-space:nowrap;max-width:120px";
+      const lbl = document.createElement("span");
+      lbl.textContent = val;
+      lbl.style.cssText = "overflow:hidden;text-overflow:ellipsis;white-space:nowrap";
+      const rm = document.createElement("button");
+      rm.textContent = "×";
+      rm.style.cssText = "background:none;border:none;cursor:pointer;padding:0;font-size:11px;line-height:1;color:var(--accent2);margin-left:1px;flex-shrink:0";
+      rm.onclick = (e) => { e.stopPropagation(); selected.splice(i, 1); onChange(selected.join(",")); renderChips(); };
+      chip.appendChild(lbl); chip.appendChild(rm);
+      chipsWrap.appendChild(chip);
+    });
+  }
+  renderChips();
+  wrap.appendChild(chipsWrap);
+
+  // Dropdown + custom input row
+  const ctrlRow = document.createElement("div");
+  ctrlRow.style.cssText = "display:flex;gap:4px;align-items:center";
+
+  const sel = document.createElement("select");
+  sel.style.cssText = "flex:1;font-size:11px;padding:2px 4px;min-width:0;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-family:var(--font)";
+  const ph = document.createElement("option"); ph.value=""; ph.textContent="+ Add…"; sel.appendChild(ph);
+  options.forEach(opt => {
+    const o = document.createElement("option"); o.value=opt; o.textContent=opt; sel.appendChild(o);
+  });
+  sel.addEventListener("change", e => {
+    const v = e.target.value.trim();
+    if (v && !selected.includes(v)) { selected.push(v); onChange(selected.join(",")); renderChips(); }
+    sel.value = "";
+  });
+  ctrlRow.appendChild(sel);
+
+  const customInp = document.createElement("input");
+  customInp.type = "text"; customInp.placeholder = "Custom…";
+  customInp.style.cssText = "width:70px;font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-family:var(--font)";
+  customInp.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const v = customInp.value.trim().replace(/,$/, "");
+      if (v && !selected.includes(v)) { selected.push(v); onChange(selected.join(",")); renderChips(); }
+      customInp.value = "";
+    }
+  });
+  customInp.addEventListener("blur", () => {
+    const v = customInp.value.trim();
+    if (v && !selected.includes(v)) { selected.push(v); onChange(selected.join(",")); renderChips(); }
+    customInp.value = "";
+  });
+  ctrlRow.appendChild(customInp);
+  wrap.appendChild(ctrlRow);
+  return wrap;
+}
+
+// ── Select with custom input option ─────────────────────────
+function makeSelectCustom(options, value, onChange) {
+  const isCustom = value && !options.includes(value);
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "display:flex;flex-direction:column;gap:3px;min-width:0";
+
+  const sel = document.createElement("select");
+  sel.style.cssText = "font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text);font-family:var(--font);width:100%";
+  options.forEach(opt => {
+    const o = document.createElement("option"); o.value=opt; o.textContent=opt;
+    if (opt === value) o.selected = true;
+    sel.appendChild(o);
+  });
+  const customOpt = document.createElement("option"); customOpt.value="__custom__"; customOpt.textContent="Custom…"; sel.appendChild(customOpt);
+  if (isCustom) sel.value = "__custom__";
+  else sel.value = value || options[0] || "";
+
+  const customInp = document.createElement("input");
+  customInp.type="text"; customInp.placeholder="Type value…";
+  customInp.style.cssText = "font-size:11px;padding:2px 5px;border:1px solid var(--accent-border);border-radius:4px;background:var(--surface);color:var(--text);font-family:var(--font);width:100%";
+  customInp.style.display = isCustom ? "block" : "none";
+  if (isCustom) customInp.value = value;
+
+  sel.addEventListener("change", e => {
+    if (e.target.value === "__custom__") {
+      customInp.style.display = "block"; customInp.focus();
+    } else {
+      customInp.style.display = "none";
+      onChange(e.target.value);
+    }
+  });
+  customInp.addEventListener("input", e => onChange(e.target.value));
+  wrap.appendChild(sel);
+  wrap.appendChild(customInp);
+  return wrap;
+}
+
+function makeSelect(options, value, onChange, placeholder) {
+  const sel = document.createElement("select");
+  sel.style.fontFamily = "var(--font)";
+  sel.style.fontSize = "13px";
+  if (placeholder) {
+    const ph = document.createElement("option");
+    ph.value = ""; ph.textContent = placeholder; ph.disabled = true;
+    sel.appendChild(ph);
+  }
+  options.forEach(opt => {
+    const o = document.createElement("option");
+    o.value = opt; o.textContent = opt;
+    sel.appendChild(o);
+  });
+  // Set value after options are added
+  sel.value = value || (options[0] || "");
+  sel.addEventListener("change", e => onChange(e.target.value));
+  return sel;
+}
+
+// ═══════════════════════════════════════════════════════
+// APP STATE & RENDER ENGINE
+// ═══════════════════════════════════════════════════════
+
+let STATE = {
+  app: initAppState(),
+  projectData: {},       // projectId → data
+  page: "dashboard",     // dashboard | tracker | agent | templates | guide
+  activeProjectId: null,
+  activeSection: "biz_context",
+  agentTab: "populate",  // populate | ask | sources | config
+  serverStatus: null,
+  sourcesStatus: null,
+  sourcesLoading: false,
+  agentLog: [],
+  agentRunning: false,
+  agentQuestion: "",
+  agentAnswer: null,
+  agentConversation: [],
+  showNewProject: false,
+  showNewTemplate: false,
+  editTemplateId: null,
+};
+
+const saved = loadState();
+if (saved) {
+  const freshApp = initAppState();
+  STATE.app = { ...freshApp, ...saved.app };
+  // Ensure templates always exist
+  if (!STATE.app.templates || !STATE.app.templates.length) {
+    STATE.app.templates = JSON.parse(JSON.stringify(DEFAULT_TEMPLATES));
+  }
+  // Restore project data, healing any missing fields
+  const rawData = saved.projectData || {};
+  STATE.projectData = {};
+  Object.entries(rawData).forEach(([id, data]) => {
+    const fresh = initProjectData(id);
+    STATE.projectData[id] = {
+      ...fresh,
+      ...data,
+      checklist: { ...fresh.checklist, ...(data.checklist || {}) },
+      reverseKT: data.reverseKT || fresh.reverseKT,
+      sessions:  data.sessions  || [],
+      signoff:   { ...fresh.signoff, ...(data.signoff || {}) },
+      agentDrafts: data.agentDrafts || {},
+    };
+  });
+}
+
+function persist() {
+  saveState({ app: STATE.app, projectData: STATE.projectData });
+}
+
+function render() {
+  try {
+    const app = document.getElementById("app");
+    if (!app) return;
+    app.innerHTML = "";
+    app.appendChild(renderShell());
+  } catch(err) {
+    console.error("Render error:", err);
+    const app = document.getElementById("app");
+    if (app) {
+      app.innerHTML = `<div style="padding:32px;font-family:sans-serif">
+        <h2 style="color:#dc2626;margin-bottom:8px">Something went wrong</h2>
+        <pre style="background:#fef2f2;padding:16px;border-radius:8px;font-size:12px;overflow:auto;color:#7f1d1d">${err.stack || err.message}</pre>
+        <button onclick="STATE.page='dashboard';STATE.activeProjectId=null;render()" 
+          style="margin-top:16px;padding:8px 16px;background:#0d9488;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:14px">
+          ← Back to Dashboard
+        </button>
+      </div>`;
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// SHELL
+// ═══════════════════════════════════════════════════════
+
+function renderShell() {
+  const shell = h("div", { style: { display:"flex", flexDirection:"column", height:"100vh", overflow:"hidden" } });
+  shell.appendChild(renderNav());
+  const body = h("div", { style: { flex:1, overflow:"hidden", display:"flex" } });
+  const pages = { dashboard: renderDashboard, tracker: renderTracker, agent: renderAgent, templates: renderTemplates, guide: renderGuide };
+  body.appendChild((pages[STATE.page] || renderDashboard)());
+  shell.appendChild(body);
+  return shell;
+}
+
+// ═══════════════════════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════════════════════
+
+function renderNav() {
+  const nav = h("nav", { style: { background:"var(--surface)", borderBottom:"1px solid var(--border)", padding:"0 20px", display:"flex", alignItems:"center", gap:4, height:"52px", flexShrink:0, boxShadow:"0 1px 2px rgba(0,0,0,.04)" } });
+
+  // Logo
+  const logo = h("div", { style: { fontWeight:700, fontSize:16, color:"var(--text)", letterSpacing:"-.02em", marginRight:16, display:"flex", alignItems:"center", gap:6 } });
+  logo.innerHTML = `<span style="color:var(--accent)">⬡</span> KT<span style="color:var(--accent)">.</span>Platform`;
+  nav.appendChild(logo);
+
+  // Nav items
+  const navItems = [
+    { id:"dashboard", label:"Dashboard" },
+    { id:"tracker",   label:"KT Tracker", requiresProject: true },
+    { id:"agent",     label:"Agent Studio", requiresProject: true },
+    { id:"templates", label:"Templates" },
+    { id:"guide",     label:"How to Use" },
+  ];
+
+  navItems.forEach(item => {
+    const hasProject = !!STATE.activeProjectId;
+    const disabled = item.requiresProject && !hasProject;
+    const active = STATE.page === item.id;
+    const btn = h("button", {
+      class: `btn btn-ghost`,
+      style: { color: active ? "var(--accent)" : disabled ? "var(--text4)" : "var(--text2)",
+               borderBottom: active ? "2px solid var(--accent)" : "2px solid transparent",
+               borderRadius:0, padding:"0 12px", height:"52px", fontWeight: active ? 600 : 400,
+               cursor: disabled ? "not-allowed" : "pointer" },
+      onclick: () => { if (!disabled) { STATE.page = item.id; render(); } }
+    }, item.label);
+    nav.appendChild(btn);
+  });
+
+  nav.appendChild(h("div", { style: { flex:1 } }));
+
+  // Server status dot
+  const dot = h("div", { style: { width:8, height:8, borderRadius:"50%", background: STATE.serverStatus?.ok ? "var(--green)" : "var(--text4)", marginRight:4, flexShrink:0 } });
+  const statusLabel = h("span", { style: { fontSize:11, color:"var(--text3)", marginRight:16 } }, STATE.serverStatus?.ok ? "Backend connected" : "Backend offline");
+  nav.appendChild(dot); nav.appendChild(statusLabel);
+
+  if (STATE.activeProjectId) {
+    const proj = STATE.app.projects.find(p => p.id === STATE.activeProjectId);
+    if (proj) {
+      const cc = clientColor(proj.client);
+      const chip = h("div", { style: { display:"flex", alignItems:"center", gap:6, background:"var(--surface2)", border:"1px solid var(--border)", borderRadius:20, padding:"3px 10px 3px 6px", cursor:"pointer" }, onclick:()=>{ STATE.page="dashboard"; render(); } });
+      chip.appendChild(h("span", { style: { width:8, height:8, borderRadius:"50%", background:cc, flexShrink:0, display:"inline-block" } }));
+      chip.appendChild(h("span", { style: { fontSize:12, fontWeight:500, color:"var(--text2)" } }, proj.name));
+      nav.appendChild(chip);
+    }
+  }
+
+  return nav;
+}
+
+// ═══════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════
+
+function renderDashboard() {
+  const page = h("div", { style: { flex:1, overflowY:"auto", padding:"28px 32px" } });
+
+  // Header
+  const hdr = h("div", { style: { display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:24 } });
+  hdr.appendChild(h("div", {style:{flex:1,minWidth:0}}, h("h1", {}, "Projects"), h("p", { style:{ color:"var(--text3)", fontSize:13, marginTop:3 } }, `${STATE.app.projects.length} project${STATE.app.projects.length!==1?"s":""} · Knowledge Transfer Tracker`)));
+  const newBtn = h("button", { class:"btn btn-primary", onclick:()=>{ STATE.showNewProject=true; render(); } }, "+ New Project");
+  hdr.appendChild(newBtn);
+  page.appendChild(hdr);
+
+  // New project modal
+  if (STATE.showNewProject) {
+    page.appendChild(renderNewProjectModal());
+  }
+
+  if (!STATE.app.projects.length) {
+    const empty = h("div", { class:"empty-state", style:{marginTop:60} });
+    empty.innerHTML = `<div class="icon">📋</div><p style="font-size:16px;font-weight:600;margin-bottom:6px;color:var(--text)">No projects yet</p><p>Click "+ New Project" to create your first KT project.</p>`;
+    page.appendChild(empty);
+    return page;
+  }
+
+  // Stats row
+  const stats = h("div", { style:{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:24 } });
+  const total = STATE.app.projects.length;
+  const inProg = STATE.app.projects.filter(p => p.phase !== "Sign-off").length;
+  const complete = STATE.app.projects.filter(p => STATE.projectData[p.id]?.signoff?.signedAt).length;
+  const avgPct = total ? Math.round(STATE.app.projects.reduce((s,p) => s + calcProgress(STATE.projectData[p.id]),0)/total) : 0;
+
+  [
+    { label:"Total Projects", val:total,    color:"var(--accent)" },
+    { label:"Active",          val:inProg,   color:"var(--blue)" },
+    { label:"Signed Off",     val:complete, color:"var(--green)" },
+    { label:"Avg Progress",   val:avgPct+"%",color:"var(--purple)" },
+  ].forEach(s => {
+    const card = el("div","card");
+    card.style.cssText = "padding:16px 20px";
+    card.appendChild(h("div",{style:{fontSize:11,fontWeight:600,color:"var(--text3)",letterSpacing:".05em",marginBottom:6,textTransform:"uppercase"}},s.label));
+    card.appendChild(h("div",{style:{fontSize:26,fontWeight:700,color:s.color,fontFamily:"var(--mono)"}},String(s.val)));
+    stats.appendChild(card);
+  });
+  page.appendChild(stats);
+
+  // Project grid
+  const grid = h("div", { style:{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:14 } });
+  STATE.app.projects.forEach(proj => {
+    const data = STATE.projectData[proj.id];
+    const pct = calcProgress(data);
+    const blocked = countBlocked(data);
+    const cc = clientColor(proj.client);
+    const card = el("div","card");
+    card.style.cssText = `padding:18px 20px;cursor:pointer;position:relative;transition:box-shadow .15s,transform .15s;border-top:3px solid ${cc}`;
+    card.onmouseenter = () => { card.style.boxShadow = "var(--shadow-md)"; card.style.transform = "translateY(-1px)"; };
+    card.onmouseleave = () => { card.style.boxShadow = ""; card.style.transform = ""; };
+    card.onclick = () => { STATE.activeProjectId = proj.id; STATE.page = "tracker"; STATE.activeSection = "biz_context"; render(); };
+
+    const row1 = h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:10}});
+    const nameBlock = h("div",{});
+    nameBlock.appendChild(h("div",{style:{fontWeight:600,fontSize:15,color:"var(--text)",marginBottom:4}},proj.name));
+    const meta = h("div",{style:{display:"flex",gap:6,flexWrap:"wrap"}});
+    meta.appendChild(h("span",{class:"tag",style:{background:cc+"18",color:cc,border:`1px solid ${cc}33`}},proj.client));
+    meta.appendChild(h("span",{class:"tag",style:{background:"var(--surface2)",color:"var(--text3)",border:"1px solid var(--border)"}},proj.phase));
+    if (blocked) meta.appendChild(h("span",{class:"tag",style:{background:"var(--red-bg)",color:"var(--red)",border:"1px solid var(--red-border)"}},`⚠ ${blocked} blocked`));
+    nameBlock.appendChild(meta);
+    row1.appendChild(nameBlock);
+
+    // Progress ring (simple)
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute("width","44"); svg.setAttribute("height","44");
+    const r=18, circ=2*Math.PI*r, offset=circ-(pct/100)*circ;
+    const ringColor = pct===100?"var(--green)":pct>60?"var(--accent)":pct>30?"var(--amber)":"var(--text4)";
+    svg.innerHTML = `<circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--border2)" stroke-width="3"/>
+      <circle cx="22" cy="22" r="${r}" fill="none" stroke="${ringColor}" stroke-width="3"
+        stroke-dasharray="${circ}" stroke-dashoffset="${offset}" stroke-linecap="round"
+        transform="rotate(-90 22 22)" style="transition:stroke-dashoffset .4s"/>
+      <text x="22" y="26" text-anchor="middle" font-size="10" font-weight="600" fill="${ringColor}" font-family="var(--mono)">${pct}%</text>`;
+    row1.appendChild(svg);
+    card.appendChild(row1);
+
+    if (proj.description) card.appendChild(h("p",{style:{fontSize:12,color:"var(--text3)",marginBottom:8,lineHeight:1.4}},proj.description));
+
+    const foot = h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:8,paddingTop:8,borderTop:"1px solid var(--border)"}});
+    foot.appendChild(h("span",{style:{fontSize:11,color:"var(--text4)"}},proj.owner ? `Owner: ${proj.owner}` : "No owner set"));
+    foot.appendChild(h("span",{style:{fontSize:11,color:"var(--text4)"}},proj.targetDate ? `Due ${fmtDate(proj.targetDate)}` : "No due date"));
+    card.appendChild(foot);
+
+    // Delete btn
+    const del = h("button",{class:"btn btn-ghost btn-sm",style:{position:"absolute",top:"8px",right:"8px",color:"var(--text4)",padding:"2px 8px",fontSize:"14px",lineHeight:"1",borderRadius:"4px",background:"transparent",border:"none",zIndex:1},onclick:e=>{
+      e.stopPropagation();
+      if (confirm(`Delete project "${proj.name}"?`)) {
+        STATE.app.projects = STATE.app.projects.filter(p=>p.id!==proj.id);
+        delete STATE.projectData[proj.id];
+        if (STATE.activeProjectId===proj.id) STATE.activeProjectId=null;
+        persist(); render();
+      }
+    }},"✕");
+    card.appendChild(del);
+    grid.appendChild(card);
+  });
+  page.appendChild(grid);
+  return page;
+}
+
+function renderNewProjectModal() {
+  const overlay = h("div",{style:{position:"fixed",inset:0,background:"rgba(15,23,42,.4)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center"}});
+  const modal = el("div","card");
+  modal.style.cssText = "width:500px;max-width:96vw;padding:28px;max-height:92vh;overflow-y:auto";
+  modal.onclick = e => e.stopPropagation();
+
+  modal.appendChild(h("h2",{style:{marginBottom:6}},"New KT Project"));
+  modal.appendChild(h("p",{style:{fontSize:12,color:"var(--text3)",marginBottom:20}},"Fill in the details below. You can edit everything later."));
+
+  // Live form object — values read from DOM on submit, not closures
+  // Use named refs so we can read reliably
+  const refs = {};
+
+  function inp(label, key, type="text", placeholder="", required=false) {
+    const g = el("div","form-group"); g.style.marginBottom = "12px";
+    g.appendChild(h("label",{}, label + (required?" *":"")));
+    const input = h("input",{type, placeholder: placeholder||label});
+    refs[key] = input;
+    g.appendChild(input);
+    return g;
+  }
+
+  function sel(label, key, options, displayFn) {
+    const g = el("div","form-group"); g.style.marginBottom = "12px";
+    g.appendChild(h("label",{},label));
+    const select = document.createElement("select");
+    select.style.cssText = "width:100%";
+    options.forEach(opt => {
+      const o = document.createElement("option");
+      o.value = opt;
+      o.textContent = displayFn ? displayFn(opt) : opt;
+      select.appendChild(o);
+    });
+    refs[key] = select;
+    g.appendChild(select);
+    return g;
+  }
+
+  function row2(...children) {
+    const d = h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}});
+    children.forEach(c => d.appendChild(c));
+    return d;
+  }
+
+  // Project name (full width)
+  modal.appendChild(inp("Project Name","name","text","e.g. Orders Pipeline — Team Handoff",true));
+
+  // Client + Phase
+  const clientOptions = Object.keys(CLIENT_COLORS);
+  modal.appendChild(row2(
+    sel("Client","client", clientOptions),
+    sel("Phase","phase", ["Planning","KT Sessions","Reverse KT","Sign-off"])
+  ));
+
+  // Owner + Incoming
+  modal.appendChild(row2(
+    inp("Outgoing Team / Owner","owner","text","e.g. Data Eng Team A"),
+    inp("Incoming Team","incomingTeam","text","e.g. Data Eng Team B")
+  ));
+
+  // Date + Template
+  const templateOptions = STATE.app.templates.map(t=>t.id);
+  modal.appendChild(row2(
+    inp("Target Handover Date","targetDate","date"),
+    sel("Prompt Template","templateId", templateOptions, id => {
+      const t = STATE.app.templates.find(t=>t.id===id);
+      return t ? t.name : id;
+    })
+  ));
+
+  // GitHub keyword
+  modal.appendChild(inp("GitHub Search Keyword","githubKeyword","text","e.g. orders-pipeline (used by Agent)"));
+
+  // Description
+  const descG = el("div","form-group"); descG.style.marginBottom="12px";
+  descG.appendChild(h("label",{},"Description (optional)"));
+  const descTA = h("textarea",{rows:2, placeholder:"Short description of this KT project…"});
+  descTA.style.resize = "none";
+  refs["description"] = descTA;
+  descG.appendChild(descTA);
+  modal.appendChild(descG);
+
+  const btns = h("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",marginTop:20,paddingTop:16,borderTop:"1px solid var(--border)"}});
+
+  btns.appendChild(h("button",{class:"btn btn-secondary",onclick:()=>{ STATE.showNewProject=false; render(); }},"Cancel"));
+
+  btns.appendChild(h("button",{class:"btn btn-primary",onclick:()=>{
+    // Read all values directly from DOM refs
+    const name = refs.name.value.trim();
+    if (!name) { refs.name.style.borderColor="var(--red)"; refs.name.focus(); return; }
+
+    const id = uid();
+    const proj = {
+      id,
+      name,
+      client:        refs.client.value,
+      phase:         refs.phase.value,
+      owner:         refs.owner.value.trim(),
+      incomingTeam:  refs.incomingTeam.value.trim(),
+      targetDate:    refs.targetDate.value,
+      templateId:    refs.templateId.value,
+      githubKeyword: refs.githubKeyword.value.trim(),
+      description:   refs.description.value.trim(),
+      selectedSections: ["biz_context","pipelines","data_sources","infrastructure","data_quality","known_issues","contacts"],
+      enabledSources: ["github"],
+      createdAt: new Date().toISOString()
+    };
+
+    STATE.app.projects.push(proj);
+    STATE.projectData[id] = initProjectData(id);
+    STATE.activeProjectId = id;
+    STATE.showNewProject = false;
+    persist();
+    STATE.page = "tracker";
+    STATE.activeSection = "biz_context";
+    render();
+  }},"Create Project →"));
+
+  modal.appendChild(btns);
+  overlay.appendChild(modal);
+  overlay.onclick = () => { STATE.showNewProject=false; render(); };
+  return overlay;
+}
+
+// ═══════════════════════════════════════════════════════
+// KT TRACKER
+// ═══════════════════════════════════════════════════════
+
+function renderTracker() {
+  const proj = STATE.app.projects.find(p=>p.id===STATE.activeProjectId);
+  const data = STATE.projectData[STATE.activeProjectId];
+  if (!proj || !data) return h("div",{style:{padding:32}},"Project not found.");
+
+  const pct = calcProgress(data);
+  const blocked = countBlocked(data);
+  const wrap = h("div",{style:{display:"flex",flexDirection:"column",flex:1,overflow:"hidden"}});
+
+  // ── Project header bar ──
+  const bar = h("div",{style:{background:"var(--surface)",borderBottom:"1px solid var(--border)",padding:"10px 20px",display:"flex",alignItems:"center",gap:12,flexShrink:0,flexWrap:"wrap"}});
+
+  // Phase stepper
+  const cc = clientColor(proj.client);
+  PHASES.forEach((ph,i) => {
+    const isActive = proj.phase === ph;
+    const isDone = PHASES.indexOf(proj.phase) > i;
+    const btn = h("button",{
+      style:{ padding:"4px 12px", borderRadius:"var(--radius-sm)", fontSize:11, fontWeight:600,
+              border:`1px solid ${isActive?"var(--accent)":isDone?"var(--green-border)":"var(--border)"}`,
+              background:isActive?"var(--accent-bg)":isDone?"var(--green-bg)":"transparent",
+              color:isActive?"var(--accent2)":isDone?"var(--green)":"var(--text3)",
+              cursor:"pointer" },
+      onclick:()=>{ proj.phase=ph; persist(); render(); }
+    }, (isDone&&!isActive?"✓ ":"")+ph);
+    bar.appendChild(btn);
+    if (i<PHASES.length-1) bar.appendChild(h("span",{style:{color:"var(--border2)",fontSize:10}},"›"));
+  });
+
+  bar.appendChild(h("div",{style:{flex:1}}));
+  if (blocked) bar.appendChild(h("span",{class:"tag",style:{background:"var(--red-bg)",color:"var(--red)",border:"1px solid var(--red-border)"}},`⚠ ${blocked} blocked`));
+
+  // Progress
+  const pbWrap = h("div",{style:{display:"flex",alignItems:"center",gap:8}});
+  pbWrap.appendChild(h("span",{style:{fontSize:11,color:"var(--text3)"}},`${pct}%`));
+  const pbOuter = h("div",{style:{width:100,height:5,background:"var(--surface2)",borderRadius:3,border:"1px solid var(--border)",overflow:"hidden"}});
+  const pbFill = h("div",{style:{width:`${pct}%`,height:"100%",background:pct===100?"var(--green)":"var(--accent)",transition:"width .4s"}});
+  pbOuter.appendChild(pbFill); pbWrap.appendChild(pbOuter);
+  bar.appendChild(pbWrap);
+
+  // Edit owner/date inline
+  ["owner","targetDate"].forEach(key => {
+    const label = key==="owner"?"Owner":"Due Date";
+    const inp = h("input",{
+      type: key==="targetDate"?"date":"text",
+      value: proj[key]||"",
+      placeholder: label,
+      style:{width:key==="targetDate"?130:110, padding:"3px 7px", fontSize:11},
+      oninput: e=>{ proj[key]=e.target.value; persist(); },
+      onchange: e=>{ proj[key]=e.target.value; persist(); }
+    });
+    bar.appendChild(h("span",{style:{fontSize:11,color:"var(--text3)"}},label+":"));
+    bar.appendChild(inp);
+  });
+
+  wrap.appendChild(bar);
+
+  // ── Main 3-panel layout ──
+  const body = h("div",{style:{display:"flex",flex:1,overflow:"hidden"}});
+
+  // LEFT SIDEBAR
+  body.appendChild(renderTrackerSidebar(data));
+
+  // CENTER CONTENT
+  body.appendChild(renderTrackerCenter(proj, data));
+
+  wrap.appendChild(body);
+  return wrap;
+}
+
+function renderTrackerSidebar(data) {
+  const sidebar = h("div",{style:{width:234,borderRight:"1px solid var(--border)",background:"var(--surface)",overflowY:"auto",flexShrink:0}});
+
+  const groups = ["DOCUMENTATION","KT PROCESS","COMPLETION"];
+  groups.forEach(group => {
+    const secs = SECTION_DEFS.filter(s=>s.group===group);
+    const grpDiv = h("div",{style:{paddingTop:12}});
+    grpDiv.appendChild(h("div",{style:{padding:"2px 14px 6px",fontSize:10,fontWeight:700,color:"var(--text4)",letterSpacing:".1em",textTransform:"uppercase"}},group));
+    secs.forEach(sec => {
+      const isActive = STATE.activeSection === sec.id;
+      let items = sec.isSpecial==="reverseKT" ? data.reverseKT :
+                  sec.isSpecial ? [] : (data.checklist[sec.id]||[]);
+      const pct = (!sec.isSpecial||sec.isSpecial==="reverseKT") ? calcSectionProgress(items) : null;
+      const isDone = pct === 100;
+      const isBlocked = !sec.isSpecial && (data.checklist[sec.id]||[]).some(i=>i.status==="Blocked");
+
+      const btn = h("button",{
+        style:{
+          width:"100%", textAlign:"left", border:"none", borderRadius:0,
+          borderLeft:`3px solid ${isActive?"var(--accent)":isDone?"var(--green)":isBlocked?"var(--red)":"transparent"}`,
+          background:isActive?"var(--accent-bg)":"transparent",
+          padding:"9px 12px 9px 11px", display:"flex", alignItems:"center", gap:8, cursor:"pointer",
+          transition:"background .12s"
+        },
+        onclick:()=>{ STATE.activeSection=sec.id; render(); }
+      });
+      btn.onmouseenter=()=>{ if(!isActive) btn.style.background="var(--surface2)"; };
+      btn.onmouseleave=()=>{ if(!isActive) btn.style.background="transparent"; };
+
+      // Icon in a small rounded square
+      const iconWrap = h("span",{style:{
+        width:26, height:26, borderRadius:6, flexShrink:0,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontSize:13,
+        background:isActive?"rgba(13,148,136,.12)":isDone?"var(--green-bg)":"var(--surface2)",
+      }}, sec.icon);
+      btn.appendChild(iconWrap);
+
+      const labelWrap = h("div",{style:{flex:1,minWidth:0}});
+      labelWrap.appendChild(h("div",{style:{
+        fontSize:12, fontWeight:isActive?600:500,
+        color:isActive?"var(--accent2)":isDone?"var(--green)":"var(--text2)",
+        whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis"
+      }}, sec.label));
+      btn.appendChild(labelWrap);
+
+      if (pct !== null) {
+        if (isDone) {
+          btn.appendChild(h("span",{style:{fontSize:11,color:"var(--green)",flexShrink:0}},"✓"));
+        } else if (pct > 0) {
+          const pill = h("span",{style:{
+            fontSize:10, fontWeight:600, color:"var(--text3)",
+            background:"var(--surface2)", border:"1px solid var(--border)",
+            borderRadius:20, padding:"1px 6px", flexShrink:0
+          }},`${pct}%`);
+          btn.appendChild(pill);
+        }
+      }
+      grpDiv.appendChild(btn);
+    });
+    sidebar.appendChild(grpDiv);
+  });
+  sidebar.appendChild(h("div",{style:{height:16}}));
+  return sidebar;
+}
+
+function renderTrackerCenter(proj, data) {
+  const sec = SECTION_DEFS.find(s=>s.id===STATE.activeSection);
+  if (!sec) return h("div",{style:{flex:1}});
+
+  const center = h("div",{style:{flex:1,overflowY:"auto",padding:"22px 24px"}});
+
+  // Section header
+  const secHdr = h("div",{style:{marginBottom:18}});
+  const titleRow = h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:4}});
+  titleRow.appendChild(h("span",{style:{fontSize:20}},sec.icon));
+  titleRow.appendChild(h("h2",{},sec.label));
+
+  if (!sec.isSpecial || sec.isSpecial==="reverseKT") {
+    const items = sec.isSpecial==="reverseKT" ? data.reverseKT : (data.checklist[sec.id]||[]);
+    const pct = calcSectionProgress(items);
+    if (pct===100) titleRow.appendChild(h("span",{class:"tag",style:{background:"var(--green-bg)",color:"var(--green)",border:"1px solid var(--green-border)"}},"✓ Complete"));
+    else titleRow.appendChild(h("span",{style:{fontSize:12,color:"var(--text3)"}},`${items.filter(i=>i.status==="Done"||i.status==="Passed").length}/${items.length} done`));
+  }
+  secHdr.appendChild(titleRow);
+  secHdr.appendChild(h("p",{style:{fontSize:12,color:"var(--text3)",marginLeft:30}},sec.desc||""));
+  center.appendChild(secHdr);
+
+  // Agent draft banner
+  const draft = data.agentDrafts && data.agentDrafts[sec.id];
+  if (draft && !sec.isSpecial) {
+    center.appendChild(renderDraftBanner(proj, data, sec, draft));
+  }
+
+  // Section-specific rendering
+  if (sec.isSpecial === "sessions") center.appendChild(renderSessions(data));
+  else if (sec.isSpecial === "reverseKT") center.appendChild(renderReverseKT(data));
+  else if (sec.isSpecial === "day1") center.appendChild(renderDay1Kit(data));
+  else if (sec.isSpecial === "signoff") center.appendChild(renderSignoff(proj, data));
+  else center.appendChild(renderChecklist(data, sec));
+
+  return center;
+}
+
+function renderDraftBanner(proj, data, sec, draft) {
+  const banner = h("div",{style:{background:"var(--accent-bg)",border:"1px solid var(--accent-border)",borderRadius:"var(--radius)",padding:"12px 16px",marginBottom:16}});
+  const top = h("div",{style:{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:12}});
+  const left = h("div",{style:{flex:1}});
+  left.appendChild(h("div",{style:{fontWeight:600,fontSize:13,color:"var(--accent2)",marginBottom:4}},"🤖 Agent Draft Available"));
+  left.appendChild(h("p",{style:{fontSize:12,color:"var(--text2)",lineHeight:1.5}},draft.content));
+  if (draft.verify && draft.verify.length) {
+    left.appendChild(h("div",{style:{marginTop:8,fontSize:11,color:"var(--text3)",fontWeight:600}},"Verify manually:"));
+    const ul = h("ul",{style:{margin:"4px 0 0 16px",fontSize:11,color:"var(--text3)"}});
+    draft.verify.forEach(v=>ul.appendChild(h("li",{},v)));
+    left.appendChild(ul);
+  }
+  top.appendChild(left);
+  const btns = h("div",{style:{display:"flex",gap:6,flexShrink:0}});
+  btns.appendChild(h("button",{class:"btn btn-sm",style:{background:"var(--accent)",color:"#fff",border:"none"},onclick:()=>{
+    // Accept: copy draft content into section notes
+    if (data.checklist[sec.id]) {
+      data.checklist[sec.id].forEach(item => {
+        if (!item.notes) item.notes = "(Agent draft accepted — verify details)";
+        if (item.status === "Not Started") item.status = "In Progress";
+      });
+    }
+    delete data.agentDrafts[sec.id];
+    persist(); render();
+  }},"✓ Accept"));
+  btns.appendChild(h("button",{class:"btn btn-sm btn-secondary",onclick:()=>{ delete data.agentDrafts[sec.id]; persist(); render(); }},"Skip"));
+  top.appendChild(btns);
+  banner.appendChild(top);
+  return banner;
+}
+
+function renderChecklist(data, sec) {
+  // Heal missing section
+  if (!data.checklist[sec.id]) {
+    const freshItems = DEFAULT_CHECKLIST_ITEMS[sec.id] || [];
+    data.checklist[sec.id] = freshItems.map(item => ({
+      item, notes:"", link:"", status:"Not Started",
+      ...Object.fromEntries((sec.fields||[]).map(f=>[f.key,""]))
+    }));
+  }
+  const items = data.checklist[sec.id];
+  const fields = sec.fields || [];
+  if (!data._editingItems) data._editingItems = {};
+
+  const wrap = h("div", {style:{display:"flex",flexDirection:"column",gap:0}});
+
+  // ── Top action bar ──
+  const topBar = h("div",{style:{display:"flex",justifyContent:"flex-end",gap:8,marginBottom:12}});
+  const allEditing = items.every((_,i) => data._editingItems[sec.id+":"+i]);
+  topBar.appendChild(h("button",{class:"btn btn-secondary btn-sm",onclick:()=>{
+    if (allEditing) {
+      items.forEach((_,i) => delete data._editingItems[sec.id+":"+i]);
+    } else {
+      items.forEach((_,i) => { data._editingItems[sec.id+":"+i]=true; });
+    }
+    persist(); render();
+  }}, allEditing ? "✓ Save All" : "✏ Edit All"));
+  wrap.appendChild(topBar);
+
+  // ── Item cards ──
+  items.forEach((item, idx) => {
+    const editKey = sec.id+":"+idx;
+    const isEditing = !!data._editingItems[editKey];
+    const isDone    = item.status === "Done";
+    const isBlocked = item.status === "Blocked";
+    const isIP      = item.status === "In Progress";
+
+    const accentColor = isDone ? "var(--green)" : isBlocked ? "var(--red)" : isIP ? "var(--blue)" : "var(--border2)";
+
+    const card = document.createElement("div");
+    card.style.cssText = `
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-left:3px solid ${accentColor};
+      border-radius:${idx===0?"6px 6px":"0"} 0 0;
+      ${idx>0?"border-top:none;":""}
+      ${idx===items.length-1?"border-radius:0 0 6px 6px;":""}
+      transition:box-shadow .15s;
+    `;
+    if (isEditing) card.style.boxShadow = "0 0 0 2px var(--accent-border)";
+
+    // ── HEADER ROW (always visible) ──
+    const hdr = document.createElement("div");
+    hdr.style.cssText = "display:flex;align-items:center;gap:10;padding:10px 14px;cursor:pointer;";
+    hdr.onclick = () => {
+      if (isEditing) { delete data._editingItems[editKey]; }
+      else { data._editingItems[editKey] = true; }
+      persist(); render();
+    };
+
+    // Status dot
+    const dotColors = {"Not Started":"#cbd5e1","In Progress":"var(--blue)","Done":"var(--green)","Blocked":"var(--red)"};
+    const dot = document.createElement("div");
+    dot.style.cssText = `width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:1px;background:${dotColors[item.status]||"#cbd5e1"}`;
+    hdr.appendChild(dot);
+
+    // Item text
+    const txt = document.createElement("div");
+    txt.style.cssText = `flex:1;font-size:13px;font-weight:500;line-height:1.45;color:${isDone?"var(--text4)":"var(--text)"};text-decoration:${isDone?"line-through":"none"}`;
+    txt.textContent = item.item;
+    hdr.appendChild(txt);
+
+    // Badges (view mode only)
+    if (!isEditing) {
+      const badges = document.createElement("div");
+      badges.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;align-items:center;margin-right:8px;max-width:50%";
+      fields.forEach(f => {
+        const val = item[f.key];
+        if (!val || val==="—") return;
+        const vals = (f.type==="multiselect-custom") ? val.split(",").map(v=>v.trim()).filter(Boolean) : [val];
+        vals.forEach(v => {
+          const chip = document.createElement("span");
+          chip.style.cssText = "display:inline-block;background:var(--surface2);border:1px solid var(--border);color:var(--text3);border-radius:20px;padding:1px 8px;font-size:10px;font-weight:500;white-space:nowrap;max-width:110px;overflow:hidden;text-overflow:ellipsis";
+          chip.textContent = v;
+          badges.appendChild(chip);
+        });
+      });
+      // Status pill
+      const spill = document.createElement("span");
+      const pillBg  = {"Not Started":"var(--surface2)","In Progress":"var(--blue-bg)","Done":"var(--green-bg)","Blocked":"var(--red-bg)"};
+      const pillClr = {"Not Started":"var(--text4)","In Progress":"var(--blue)","Done":"var(--green)","Blocked":"var(--red)"};
+      spill.style.cssText = `background:${pillBg[item.status]};color:${pillClr[item.status]};border-radius:20px;padding:2px 9px;font-size:10px;font-weight:600;white-space:nowrap;border:1px solid ${pillClr[item.status]}33`;
+      spill.textContent = item.status;
+      badges.appendChild(spill);
+      hdr.appendChild(badges);
+    }
+
+    // Edit/Save toggle button
+    const togBtn = document.createElement("button");
+    togBtn.className = isEditing ? "btn btn-primary btn-sm" : "btn btn-ghost btn-sm";
+    togBtn.style.cssText = "flex-shrink:0;font-size:11px;padding:3px 10px;";
+    togBtn.textContent = isEditing ? "💾 Save" : "✏ Edit";
+    togBtn.onclick = (e) => { e.stopPropagation(); if(isEditing){delete data._editingItems[editKey];}else{data._editingItems[editKey]=true;} persist(); render(); };
+    hdr.appendChild(togBtn);
+    card.appendChild(hdr);
+
+    // ── EDIT PANEL ──
+    if (isEditing) {
+      const panel = document.createElement("div");
+      panel.style.cssText = "padding:0 14px 14px 14px;border-top:1px solid var(--border);background:var(--accent-bg)";
+
+      // spacer
+      const sp = document.createElement("div"); sp.style.height="12px"; panel.appendChild(sp);
+
+      // Field widgets grid
+      if (fields.length) {
+        const grid = document.createElement("div");
+        grid.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:14px";
+        fields.forEach(f => {
+          const fg = document.createElement("div");
+          const lbl = document.createElement("label");
+          lbl.textContent = f.label;
+          lbl.style.cssText = "font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block";
+          fg.appendChild(lbl);
+          let widget;
+          if (f.type === "multiselect-custom") {
+            widget = makeMultiSelectCustom(f.options, item[f.key]||"", v=>{item[f.key]=v;persist();});
+          } else if (f.type === "select-custom") {
+            widget = makeSelectCustom(f.options, item[f.key]||"", v=>{item[f.key]=v;persist();});
+          } else {
+            widget = makeSelect(f.options, item[f.key]||"", v=>{item[f.key]=v;persist();});
+            widget.style.cssText="font-size:12px;padding:5px 8px;width:100%";
+          }
+          fg.appendChild(widget);
+          grid.appendChild(fg);
+        });
+        panel.appendChild(grid);
+      }
+
+      // Status row
+      const statusRow = document.createElement("div");
+      statusRow.style.cssText = "margin-bottom:12px";
+      const sLbl = document.createElement("label");
+      sLbl.textContent = "Completion Status";
+      sLbl.style.cssText = "font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block";
+      statusRow.appendChild(sLbl);
+      const statusSel = makeSelect(["Not Started","In Progress","Done","Blocked"], item.status, v=>{item.status=v;persist();});
+      statusSel.style.cssText = "font-size:12px;padding:5px 8px;width:200px";
+      statusRow.appendChild(statusSel);
+      panel.appendChild(statusRow);
+
+      // Resource link
+      const linkRow = document.createElement("div");
+      linkRow.style.cssText = "margin-bottom:12px";
+      const lLbl = document.createElement("label");
+      lLbl.textContent = "Resource Link";
+      lLbl.style.cssText = "font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block";
+      linkRow.appendChild(lLbl);
+      const linkFlex = document.createElement("div");
+      linkFlex.style.cssText = "display:flex;gap:8px;align-items:center";
+      const linkInp = document.createElement("input");
+      linkInp.type="text"; linkInp.value=item.link||""; linkInp.placeholder="Confluence, DAG, repo, Jira, wiki URL…";
+      linkInp.style.cssText="flex:1;font-size:12px;padding:6px 10px;border:1px solid var(--border);border-radius:5px;background:var(--surface)";
+      linkInp.oninput = e=>{item.link=e.target.value;persist();};
+      linkFlex.appendChild(linkInp);
+      if (item.link) {
+        const openBtn = document.createElement("a");
+        openBtn.href=item.link; openBtn.target="_blank";
+        openBtn.style.cssText="flex-shrink:0;font-size:12px;color:var(--accent);border:1px solid var(--accent-border);border-radius:5px;padding:5px 10px;background:var(--surface);text-decoration:none;white-space:nowrap";
+        openBtn.textContent="↗ Open";
+        linkFlex.appendChild(openBtn);
+      }
+      linkRow.appendChild(linkFlex);
+      panel.appendChild(linkRow);
+
+      // Notes textarea
+      const notesDiv = document.createElement("div");
+      const nLbl = document.createElement("label");
+      nLbl.textContent = "Notes";
+      nLbl.style.cssText = "font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;display:block";
+      notesDiv.appendChild(nLbl);
+      const ta = document.createElement("textarea");
+      ta.rows=4; ta.value=item.notes||""; ta.placeholder="Context, caveats, who to ask, where to find details, edge cases…";
+      ta.style.cssText="width:100%;font-size:12px;padding:8px 10px;border:1px solid var(--border);border-radius:5px;background:var(--surface);resize:vertical;line-height:1.55;color:var(--text)";
+      ta.oninput=e=>{item.notes=e.target.value;persist();};
+      notesDiv.appendChild(ta);
+      panel.appendChild(notesDiv);
+
+      card.appendChild(panel);
+
+    } else if (item.link || item.notes) {
+      // View mode preview strip
+      const preview = document.createElement("div");
+      preview.style.cssText = "padding:0 14px 10px 32px;display:flex;flex-direction:column;gap:3px";
+      if (item.link) {
+        const lr = document.createElement("div");
+        lr.style.cssText = "display:flex;align-items:center;gap:6px";
+        const llbl = document.createElement("span");
+        llbl.style.cssText="font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.04em;flex-shrink:0";
+        llbl.textContent="Link";
+        const la = document.createElement("a");
+        la.href=item.link; la.target="_blank";
+        la.style.cssText="font-size:11px;color:var(--accent);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:400px";
+        la.textContent=item.link;
+        lr.appendChild(llbl); lr.appendChild(la);
+        preview.appendChild(lr);
+      }
+      if (item.notes) {
+        const nr = document.createElement("div");
+        nr.style.cssText="display:flex;gap:6px;align-items:flex-start";
+        const nlbl = document.createElement("span");
+        nlbl.style.cssText="font-size:10px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.04em;flex-shrink:0;margin-top:1px";
+        nlbl.textContent="Notes";
+        const nt = document.createElement("span");
+        nt.style.cssText="font-size:11px;color:var(--text2);line-height:1.5;white-space:pre-wrap";
+        nt.textContent=item.notes;
+        nr.appendChild(nlbl); nr.appendChild(nt);
+        preview.appendChild(nr);
+      }
+      card.appendChild(preview);
+    }
+
+    wrap.appendChild(card);
+  });
+
+  return wrap;
+}
+
+function renderSessions(data) {
+  const wrap = h("div",{});
+
+  // Add session form toggle
+  let adding = false;
+  const addBtn = h("button",{class:"btn btn-secondary btn-sm",style:{marginBottom:12},onclick:()=>{adding=!adding; rebuild();}},adding?"✕ Cancel":"+ Log Session");
+  wrap.appendChild(addBtn);
+
+  let form = { date:"", topic:"", attendees:"", notes:"", openQs:"" };
+  const formDiv = h("div",{});
+
+  function rebuild() {
+    formDiv.innerHTML="";
+    if (adding) {
+      const fd = el("div","card");
+      fd.style.cssText="padding:16px;margin-bottom:16px;border-color:var(--accent-border);background:var(--accent-bg)";
+      fd.appendChild(h("h3",{style:{marginBottom:12}},"New Session"));
+      const grid3 = h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}});
+      ["date|Date|date","topic|Topic|text","attendees|Attendees|text"].forEach(s=>{
+        const [key,label,type]=s.split("|");
+        const g=el("div","form-group"); g.style.marginBottom=0;
+        g.appendChild(h("label",{},label));
+        g.appendChild(h("input",{type,value:form[key],placeholder:label,oninput:e=>{form[key]=e.target.value;}}));
+        grid3.appendChild(g);
+      });
+      fd.appendChild(grid3);
+      const grid2b = h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:12}});
+      ["notes|Session Notes","openQs|Open Questions"].forEach(s=>{
+        const [key,label]=s.split("|");
+        const g=el("div","form-group"); g.style.marginBottom=0;
+        g.appendChild(h("label",{},label));
+        g.appendChild(h("textarea",{rows:2,placeholder:label+"…",oninput:e=>{form[key]=e.target.value;}}));
+        grid2b.appendChild(g);
+      });
+      fd.appendChild(grid2b);
+      const fb=h("div",{style:{display:"flex",gap:8,justifyContent:"flex-end"}});
+      fb.appendChild(h("button",{class:"btn btn-primary btn-sm",onclick:()=>{
+        if (!form.topic.trim()) return;
+        data.sessions.push({id:uid(),...form});
+        form={date:"",topic:"",attendees:"",notes:"",openQs:""};
+        adding=false; persist(); render();
+      }},"Save Session"));
+      fd.appendChild(fb);
+      formDiv.appendChild(fd);
+    }
+  }
+  rebuild();
+  wrap.appendChild(formDiv);
+
+  if (!data.sessions.length) {
+    const e=el("div","empty-state");
+    e.innerHTML=`<div class="icon">🤝</div><p>No sessions logged yet.<br>Log a session after each KT meeting.</p>`;
+    wrap.appendChild(e); return wrap;
+  }
+
+  data.sessions.forEach((sess,idx)=>{
+    const card=el("div","card"); card.style.cssText=`padding:14px 16px;margin-bottom:8px`;
+    const top=h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}});
+    const left=h("div",{style:{flex:1}});
+    const metaRow=h("div",{style:{display:"flex",gap:10,alignItems:"center",marginBottom:4,flexWrap:"wrap"}});
+    metaRow.appendChild(h("span",{style:{fontFamily:"var(--mono)",fontSize:11,color:"var(--text4)"}},"#"+(idx+1)));
+    metaRow.appendChild(h("span",{style:{fontWeight:600,fontSize:13}},sess.topic));
+    if (sess.date) metaRow.appendChild(h("span",{style:{fontSize:11,color:"var(--text3)"}},fmtDate(sess.date)));
+    if (sess.attendees) metaRow.appendChild(h("span",{style:{fontSize:11,color:"var(--text3)"}},"· "+sess.attendees));
+    left.appendChild(metaRow);
+    if (sess.notes) left.appendChild(h("p",{style:{fontSize:12,color:"var(--text2)",marginBottom:sess.openQs?4:0}},sess.notes));
+    if (sess.openQs) {
+      const oq=h("div",{style:{display:"flex",gap:6,alignItems:"flex-start"}});
+      oq.appendChild(h("span",{style:{fontSize:10,fontWeight:700,color:"var(--amber)",flexShrink:0,marginTop:1}},"OPEN Q:"));
+      oq.appendChild(h("span",{style:{fontSize:12,color:"var(--amber-border)",color:"#b45309"}},sess.openQs));
+      left.appendChild(oq);
+    }
+    top.appendChild(left);
+    top.appendChild(h("button",{class:"btn btn-ghost btn-sm",style:{color:"var(--text4)"},onclick:()=>{
+      data.sessions=data.sessions.filter(s=>s.id!==sess.id); persist(); render();
+    }},"✕"));
+    card.appendChild(top); wrap.appendChild(card);
+  });
+  return wrap;
+}
+
+function renderReverseKT(data) {
+  const sec = SECTION_DEFS.find(s=>s.id==="reverse_kt");
+  const fields = sec.fields||[];
+  const cols=["2fr",...fields.map(()=>"130px"),"160px","160px","140px"];
+  const colStyle=`display:grid;grid-template-columns:${cols.join(" ")};gap:8px;align-items:center`;
+
+  const wrap=h("div",{});
+  const thead=h("div",{style:`${colStyle};padding:7px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:6px 6px 0 0;border-bottom:none`});
+  thead.appendChild(h("span",{style:{fontSize:10,fontWeight:700,color:"var(--text3)",letterSpacing:".06em",textTransform:"uppercase"}},"Topic"));
+  fields.forEach(f=>thead.appendChild(h("span",{style:{fontSize:10,fontWeight:700,color:"var(--text3)",letterSpacing:".06em",textTransform:"uppercase"}},f.label)));
+  ["Demonstrated By","Notes","Recording/Link"].forEach(lbl=>thead.appendChild(h("span",{style:{fontSize:10,fontWeight:700,color:"var(--text3)",letterSpacing:".06em",textTransform:"uppercase"}},lbl)));
+  wrap.appendChild(thead);
+
+  data.reverseKT.forEach((item,idx)=>{
+    const isLast=idx===data.reverseKT.length-1;
+    const row=h("div",{style:`${colStyle};padding:9px 12px;background:${idx%2===0?"var(--surface)":"var(--bg)"};border:1px solid var(--border);border-top:none;border-radius:${isLast?"0 0 6px 6px":0}`});
+    row.appendChild(h("span",{style:{fontSize:12,color:"var(--text)",lineHeight:1.4}},item.item));
+    fields.forEach(f=>{
+      const sel=makeSelect(f.options,item[f.key]||"",v=>{item[f.key]=v;persist();render();});
+      sel.style.cssText="font-size:11px;padding:3px 6px;";
+      row.appendChild(sel);
+    });
+    ["demonstratedBy","notes","link"].forEach(key=>{
+      const inp=h("input",{type:"text",value:item[key]||"",placeholder:key==="demonstratedBy"?"Name…":key==="link"?"URL…":"Notes…",style:{fontSize:11,padding:"3px 7px"},oninput:e=>{item[key]=e.target.value;persist();}});
+      row.appendChild(inp);
+    });
+    wrap.appendChild(row);
+  });
+  return wrap;
+}
+
+function renderDay1Kit(data) {
+  const wrap=h("div",{});
+
+  const pct=calcProgress(data);
+  const blocked=countBlocked(data);
+  const sessions=data.sessions;
+
+  // Readiness
+  const readCard=el("div","card"); readCard.style.cssText="padding:16px 20px;margin-bottom:16px;border-left:4px solid var(--accent)";
+  const readRow=h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between"}});
+  readRow.appendChild(h("div",{},h("div",{style:{fontSize:11,fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:6}},"KT Readiness"),progressBar(pct)));
+  readRow.appendChild(h("div",{style:{textAlign:"right"}},h("div",{style:{fontSize:28,fontWeight:700,color:pct===100?"var(--green)":pct>60?"var(--accent)":"var(--amber)",fontFamily:"var(--mono)"}},pct+"%"),h("div",{style:{fontSize:11,color:"var(--text3)"}},blocked+" blocked items")));
+  readCard.appendChild(readRow); wrap.appendChild(readCard);
+
+  // Auto-compiled cards
+  const critPipelines = (data.checklist.pipelines||[]).filter(i=>i.type==="Streaming"||i.type==="Real-time"||i.status==="Verified Live").map(i=>i.item);
+  const contacts = (data.checklist.contacts||[]).filter(i=>i.status==="Handover Meeting Done"||i.status==="Introduced").map(i=>i.item);
+  const runbooks = (data.checklist.runbooks||[]).filter(i=>i.status==="Tested in Prod"||i.status==="Reviewed").map(i=>i.item);
+  const blockedItems=[];
+  SECTION_DEFS.forEach(sec=>{
+    if (sec.isSpecial) return;
+    (data.checklist[sec.id]||[]).forEach(i=>{ if(i.status==="Blocked") blockedItems.push(`[${sec.label}] ${i.item}`); });
+  });
+
+  const cards=[
+    {icon:"🔁",title:"Critical Pipelines",color:"var(--red)",items:critPipelines,empty:"Complete Pipeline Inventory first"},
+    {icon:"📞",title:"Who to Call",color:"var(--green)",items:contacts,empty:"Complete Contacts section first"},
+    {icon:"📋",title:"Runbooks Ready",color:"var(--blue)",items:runbooks,empty:"Complete Runbooks section first"},
+    {icon:"⚠️",title:"Blocked / Unresolved",color:"var(--amber)",items:blockedItems,empty:"✓ No blocked items"},
+  ];
+
+  const grid=h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}});
+  cards.forEach(c=>{
+    const card=el("div","card"); card.style.cssText=`padding:14px 16px;border-top:3px solid ${c.color}`;
+    card.appendChild(h("div",{style:{fontWeight:600,fontSize:13,marginBottom:10}},c.icon+" "+c.title));
+    const list=c.items.length?c.items:[c.empty];
+    list.slice(0,5).forEach(item=>{
+      card.appendChild(h("div",{style:{fontSize:12,color:c.items.length?"var(--text2)":"var(--text4)",padding:"3px 0",borderBottom:"1px solid var(--border)",display:"flex",gap:6}},
+        h("span",{style:{color:c.color,flexShrink:0}},"›"),item));
+    });
+    if (c.items.length>5) card.appendChild(h("div",{style:{fontSize:11,color:"var(--text3)",paddingTop:4}},`+${c.items.length-5} more`));
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+
+  // Session summary
+  if (sessions.length) {
+    const sc=el("div","card"); sc.style.cssText="padding:14px 16px";
+    sc.appendChild(h("div",{style:{fontWeight:600,fontSize:13,marginBottom:10}},"📅 KT Sessions Summary ("+sessions.length+")"));
+    const chips=h("div",{style:{display:"flex",flexWrap:"wrap",gap:6}});
+    sessions.forEach(s=>chips.appendChild(h("span",{class:"tag",style:{background:"var(--surface2)",color:"var(--text2)",border:"1px solid var(--border)"}},s.topic)));
+    sc.appendChild(chips);
+    const openQs=sessions.filter(s=>s.openQs);
+    if (openQs.length) {
+      sc.appendChild(h("div",{style:{marginTop:10,fontSize:11,fontWeight:700,color:"var(--amber)",textTransform:"uppercase",letterSpacing:".06em"}},"Open Questions"));
+      openQs.forEach(s=>sc.appendChild(h("div",{style:{fontSize:12,color:"#92400e",padding:"3px 0"}},"· "+s.openQs)));
+    }
+    wrap.appendChild(sc);
+  }
+  return wrap;
+}
+
+function renderSignoff(proj, data) {
+  const so=data.signoff;
+  const pct=calcProgress(data);
+  const blocked=countBlocked(data);
+  const rkDone=data.reverseKT.filter(i=>i.status==="Passed").length;
+  const wrap=h("div",{});
+
+  // Status summary
+  const statRow=h("div",{style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:12,marginBottom:20}});
+  [
+    {label:"Documentation",val:pct+"%",ok:pct>80,color:pct>80?"var(--green)":pct>50?"var(--amber)":"var(--red)"},
+    {label:"Blocked Items",val:blocked,ok:blocked===0,color:blocked===0?"var(--green)":"var(--red)"},
+    {label:"Reverse KT",val:`${rkDone}/${data.reverseKT.length}`,ok:rkDone===data.reverseKT.length,color:rkDone===data.reverseKT.length?"var(--green)":"var(--amber)"},
+  ].forEach(s=>{
+    const c=el("div","card"); c.style.cssText=`padding:14px 18px;text-align:center;border-top:3px solid ${s.ok?"var(--green)":"var(--amber)"}`;
+    c.appendChild(h("div",{style:{fontSize:10,fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:6}},s.label));
+    c.appendChild(h("div",{style:{fontSize:26,fontWeight:700,color:s.color,fontFamily:"var(--mono)"}},String(s.val)));
+    statRow.appendChild(c);
+  });
+  wrap.appendChild(statRow);
+
+  // Two-party confirmation
+  const parties=h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:16}});
+  [
+    {key:"outgoing",label:"Outgoing Team",nameKey:"outgoingName",roleKey:"outgoingRole",confirmedKey:"outgoingConfirmed",color:"var(--accent)",confirmText:"I confirm the KT documentation is complete and accurate to the best of my knowledge."},
+    {key:"incoming",label:"Incoming Team",nameKey:"incomingName",roleKey:"incomingRole",confirmedKey:"incomingConfirmed",color:"var(--blue)",confirmText:"I confirm the KT has been received and I have sufficient knowledge to operate independently."},
+  ].forEach(party=>{
+    const card=el("div","card"); card.style.cssText=`padding:16px;border-top:3px solid ${party.color}`;
+    card.appendChild(h("div",{style:{fontWeight:700,fontSize:13,marginBottom:12,color:party.color}},party.label));
+    ["Name","Role"].forEach(f=>{
+      const key=party[f.toLowerCase()+"Key"];
+      const g=el("div","form-group");
+      g.appendChild(h("label",{},f));
+      g.appendChild(h("input",{type:"text",value:so[key]||"",placeholder:f,onchange:e=>{so[key]=e.target.value;persist();}}));
+      card.appendChild(g);
+    });
+    const lbl=h("label",{style:{display:"flex",gap:8,alignItems:"flex-start",cursor:"pointer",marginTop:8}});
+    const chk=h("input",{type:"checkbox",style:{marginTop:3,width:"auto",accentColor:party.color}});
+    chk.checked=so[party.confirmedKey]||false;
+    chk.addEventListener("change",e=>{so[party.confirmedKey]=e.target.checked;persist();render();});
+    lbl.appendChild(chk);
+    lbl.appendChild(h("span",{style:{fontSize:12,color:"var(--text2)",lineHeight:1.5}},party.confirmText));
+    card.appendChild(lbl);
+    parties.appendChild(card);
+  });
+  wrap.appendChild(parties);
+
+  // Caveats
+  const cavG=el("div","form-group");
+  cavG.appendChild(h("label",{},"Caveats / Open Items / Exceptions"));
+  const cavTa=h("textarea",{rows:3,placeholder:"Document any outstanding items, known gaps, or agreed exceptions…",onchange:e=>{so.caveats=e.target.value;persist();}});
+  cavTa.value=so.caveats||"";
+  cavG.appendChild(cavTa);
+  wrap.appendChild(cavG);
+
+  // Sign button
+  const canSign=so.outgoingConfirmed&&so.incomingConfirmed;
+  if (so.signedAt) {
+    const signed=h("div",{style:{background:"var(--green-bg)",border:"1px solid var(--green-border)",borderRadius:"var(--radius)",padding:"16px 20px",display:"flex",alignItems:"center",gap:12}});
+    signed.innerHTML=`<span style="font-size:24px">✅</span><div><div style="font-weight:700;color:var(--green);font-size:15px">KT Signed Off</div><div style="font-size:12px;color:var(--text3)">Signed on ${fmtDate(so.signedAt)}</div></div>`;
+    wrap.appendChild(signed);
+  } else {
+    const signBtn=h("button",{
+      style:{width:"100%",padding:"12px",borderRadius:"var(--radius)",fontSize:13,fontWeight:600,
+             background:canSign?"var(--accent)":"var(--surface2)",
+             color:canSign?"#fff":"var(--text4)",
+             border:`1px solid ${canSign?"var(--accent2)":"var(--border)"}`,
+             cursor:canSign?"pointer":"not-allowed"},
+      onclick:()=>{ if(canSign){so.signedAt=new Date().toISOString();persist();render();} }
+    }, canSign ? "✓ Confirm Sign-off" : "Both parties must confirm before signing off");
+    wrap.appendChild(signBtn);
+  }
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════
+// AGENT STUDIO
+// ═══════════════════════════════════════════════════════
+
+function renderAgent() {
+  const proj = STATE.app.projects.find(p=>p.id===STATE.activeProjectId);
+  const data = STATE.projectData[STATE.activeProjectId];
+  if (!proj||!data) return h("div",{style:{padding:32,color:"var(--text3)"}},"Select a project first.");
+
+  const wrap=h("div",{style:{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}});
+
+  // Tabs bar
+  const tabBar=h("div",{style:{background:"var(--surface)",borderBottom:"1px solid var(--border)",padding:"0 24px",display:"flex",alignItems:"center",gap:0,flexShrink:0}});
+  tabBar.appendChild(h("span",{style:{fontWeight:600,fontSize:14,marginRight:20,color:"var(--text)"}},"🤖 Agent Studio"));
+  ["populate","ask","sources","config"].forEach(tab=>{
+    const labels={populate:"Populate KT",ask:"Ask Agent",sources:"Sources",config:"Configuration"};
+    const isActive=STATE.agentTab===tab;
+    const btn=h("button",{
+      style:{padding:"12px 16px",border:"none",borderBottom:`2px solid ${isActive?"var(--accent)":"transparent"}`,
+             background:"transparent",fontSize:13,fontWeight:isActive?600:400,
+             color:isActive?"var(--accent)":"var(--text3)",cursor:"pointer",transition:"all .15s"},
+      onclick:()=>{ STATE.agentTab=tab; render(); }
+    },labels[tab]);
+    tabBar.appendChild(btn);
+  });
+  tabBar.appendChild(h("div",{style:{flex:1}}));
+
+  // Server status indicator
+  const sStatus=h("div",{style:{display:"flex",alignItems:"center",gap:6,fontSize:12,color:"var(--text3)"}});
+  const connectedCount = STATE.sourcesStatus ? Object.values(STATE.sourcesStatus).filter(s=>s.connected).length : (STATE.serverStatus?.sources?.github?.connected ? 1 : 0);
+  const sDot=h("span",{style:{width:8,height:8,borderRadius:"50%",background:connectedCount>0?"var(--green)":"var(--text4)",display:"inline-block"}});
+  sStatus.appendChild(sDot);
+  sStatus.appendChild(h("span",{},connectedCount>0?`${connectedCount} source${connectedCount>1?"s":""} connected`:"No sources connected"));
+  const checkBtn=h("button",{class:"btn btn-ghost btn-sm",onclick:()=>checkServerStatus()},"↺ Check");
+  sStatus.appendChild(checkBtn);
+  tabBar.appendChild(sStatus);
+
+  wrap.appendChild(tabBar);
+
+  const content=h("div",{style:{flex:1,overflowY:"auto",padding:"24px 32px"}});
+
+  if (STATE.agentTab==="populate") content.appendChild(renderAgentPopulate(proj,data));
+  else if (STATE.agentTab==="ask") content.appendChild(renderAgentAsk(proj,data));
+  else if (STATE.agentTab==="sources") content.appendChild(renderAgentSources(proj));
+  else content.appendChild(renderAgentConfig(proj));
+
+  wrap.appendChild(content);
+  return wrap;
+}
+
+function renderAgentPopulate(proj, data) {
+  const wrap=h("div",{style:{maxWidth:780}});
+  if (!proj.enabledSources) proj.enabledSources = ["github"];
+  const CONNECTOR_ICONS = {github:"🐙",confluence:"📝",database:"🗄️",jira:"🎯",notion:"📓"};
+  const sourceLabels = proj.enabledSources.map(s => (CONNECTOR_ICONS[s]||"🔌")+" "+s.charAt(0).toUpperCase()+s.slice(1)).join(", ");
+  wrap.appendChild(h("h2",{style:{marginBottom:4}},`Populate KT`));
+  wrap.appendChild(h("p",{style:{color:"var(--text3)",fontSize:13,marginBottom:4}},"The agent scans your connected sources and drafts KT content for review. Nothing is saved until you accept."));
+  const srcPill = h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:16}});
+  srcPill.appendChild(h("span",{style:{fontSize:12,color:"var(--text3)"}},"Active sources:"));
+  srcPill.appendChild(h("span",{style:{fontSize:12,fontWeight:600,color:"var(--accent2)"}}, sourceLabels||"none"));
+  srcPill.appendChild(h("button",{class:"btn btn-ghost btn-sm",onclick:()=>{STATE.agentTab="sources";render();}},"Manage →"));
+  wrap.appendChild(srcPill);
+
+  // Source config card
+  const srcCard=el("div","card"); srcCard.style.cssText="padding:18px;margin-bottom:20px";
+  srcCard.appendChild(h("h3",{style:{marginBottom:12}},"Source Configuration"));
+
+  const grid=h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}});
+  const kwG=el("div","form-group"); kwG.style.marginBottom=0;
+  kwG.appendChild(h("label",{},"GitHub Search Keyword"));
+  const kwInp=h("input",{type:"text",value:proj.githubKeyword||"",placeholder:"e.g. orders-pipeline",oninput:e=>{proj.githubKeyword=e.target.value;persist();}});
+  kwG.appendChild(kwInp);
+  grid.appendChild(kwG);
+
+  const tplG=el("div","form-group"); tplG.style.marginBottom=0;
+  tplG.appendChild(h("label",{},"Prompt Template"));
+  const tplSel=makeSelect(STATE.app.templates.map(t=>t.name), STATE.app.templates.find(t=>t.id===proj.templateId)?.name||STATE.app.templates[0].name, v=>{
+    const tpl=STATE.app.templates.find(t=>t.name===v);
+    if (tpl) { proj.templateId=tpl.id; persist(); }
+  });
+  tplG.appendChild(tplSel);
+  grid.appendChild(tplG);
+  srcCard.appendChild(grid);
+
+  // Section selection
+  srcCard.appendChild(h("label",{style:{marginBottom:8}},"Sections to Populate"));
+  const secWrap=h("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginBottom:4}});
+  if (!proj.selectedSections) proj.selectedSections = ["biz_context","pipelines","data_sources","infrastructure","data_quality","known_issues","contacts"];
+  SECTION_DEFS.filter(s=>!s.isSpecial).forEach(sec=>{
+    const checked=proj.selectedSections.includes(sec.id);
+    const chip=h("label",{style:{display:"flex",alignItems:"center",gap:5,background:checked?"var(--accent-bg)":"var(--surface2)",border:`1px solid ${checked?"var(--accent-border)":"var(--border)"}`,borderRadius:20,padding:"3px 10px",cursor:"pointer",fontSize:12,fontWeight:checked?600:400,color:checked?"var(--accent2)":"var(--text2)",transition:"all .15s"}});
+    const chk=h("input",{type:"checkbox",style:{width:"auto",margin:0,accentColor:"var(--accent)"}});
+    chk.checked=checked;
+    chk.addEventListener("change",e=>{
+      if(e.target.checked) proj.selectedSections.push(sec.id);
+      else proj.selectedSections=proj.selectedSections.filter(s=>s!==sec.id);
+      persist(); render();
+    });
+    chip.appendChild(chk);
+    chip.appendChild(h("span",{},sec.icon+" "+sec.label));
+    secWrap.appendChild(chip);
+  });
+  srcCard.appendChild(secWrap);
+  wrap.appendChild(srcCard);
+
+  // Run button
+  const runBtn=h("button",{
+    class:"btn btn-primary",
+    style:{fontSize:14,padding:"10px 28px",marginBottom:20},
+    onclick:()=>runAgentPopulate(proj,data),
+    disabled:STATE.agentRunning
+  }, STATE.agentRunning?"⏳ Agent Running…":"▶ Run Agent");
+  if (STATE.agentRunning) runBtn.style.opacity="0.7";
+  wrap.appendChild(runBtn);
+
+  // Agent log
+  if (STATE.agentLog.length) {
+    const logCard=el("div","card"); logCard.style.cssText="padding:16px;margin-bottom:20px;background:var(--bg)";
+    logCard.appendChild(h("div",{style:{fontSize:11,fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:10}},"Agent Log"));
+    STATE.agentLog.forEach(entry=>{
+      logCard.appendChild(h("div",{style:{fontSize:12,color:entry.type==="error"?"var(--red)":"var(--text2)",padding:"3px 0",fontFamily:"var(--mono)"}},entry.message));
+    });
+    wrap.appendChild(logCard);
+  }
+
+  // Drafts preview
+  if (data.agentDrafts && Object.keys(data.agentDrafts).length) {
+    const draftCard=el("div","card"); draftCard.style.cssText="padding:16px";
+    draftCard.appendChild(h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}},
+      h("h3",{},"📝 Drafts Ready — "+Object.keys(data.agentDrafts).length+" sections"),
+      h("span",{style:{fontSize:12,color:"var(--text3)"}},"Go to KT Tracker to review each section")
+    ));
+    Object.entries(data.agentDrafts).forEach(([secId, draft])=>{
+      const sec=SECTION_DEFS.find(s=>s.id===secId);
+      if (!sec) return;
+      const row=h("div",{style:{padding:"10px 0",borderBottom:"1px solid var(--border)"}});
+      row.appendChild(h("div",{style:{fontWeight:600,fontSize:12,marginBottom:4}},sec.icon+" "+sec.label));
+      row.appendChild(h("p",{style:{fontSize:12,color:"var(--text2)",lineHeight:1.5}},draft.content));
+      draftCard.appendChild(row);
+    });
+    wrap.appendChild(draftCard);
+  }
+
+  return wrap;
+}
+
+function renderAgentAsk(proj, data) {
+  const wrap=h("div",{style:{maxWidth:700}});
+  wrap.appendChild(h("h2",{style:{marginBottom:4}},"Ask the Agent"));
+  wrap.appendChild(h("p",{style:{color:"var(--text3)",fontSize:13,marginBottom:20}},"Ask anything about the project. The agent answers using GitHub data and your KT documentation as context."));
+
+  // Conversation history
+  if (STATE.agentConversation.length) {
+    const conv=h("div",{style:{marginBottom:16}});
+    STATE.agentConversation.forEach(msg=>{
+      const isUser=msg.role==="user";
+      const bub=h("div",{style:{
+        margin:"0 0 10px",padding:"12px 16px",borderRadius:"var(--radius)",
+        background:isUser?"var(--accent-bg)":"var(--surface)",
+        border:`1px solid ${isUser?"var(--accent-border)":"var(--border)"}`,
+        maxWidth:"85%", marginLeft:isUser?"auto":"0",
+        fontSize:13,lineHeight:1.6
+      }});
+      if (!isUser&&msg.sources) {
+        const srcs=h("div",{style:{display:"flex",gap:4,marginBottom:6}});
+        msg.sources.forEach(s=>srcs.appendChild(h("span",{class:"tag",style:{background:"var(--surface2)",color:"var(--text3)",border:"1px solid var(--border)",fontSize:10}},s)));
+        bub.appendChild(srcs);
+      }
+      bub.appendChild(h("div",{style:{whiteSpace:"pre-wrap"}},msg.content));
+      conv.appendChild(bub);
+    });
+    wrap.appendChild(conv);
+  }
+
+  // Input
+  const inputRow=h("div",{style:{display:"flex",gap:8,marginBottom:8}});
+  const questionInp=h("textarea",{rows:2,placeholder:"e.g. What happens when the orders pipeline fails? What are the critical tables?",style:{resize:"none",flex:1},oninput:e=>{STATE.agentQuestion=e.target.value;}});
+  questionInp.value=STATE.agentQuestion||"";
+  inputRow.appendChild(questionInp);
+  inputRow.appendChild(h("button",{
+    class:"btn btn-primary",
+    style:{flexShrink:0,alignSelf:"flex-end",padding:"10px 16px"},
+    onclick:()=>runAgentAsk(proj,data),
+    disabled:STATE.agentRunning
+  },STATE.agentRunning?"…":"Send ↑"));
+  wrap.appendChild(inputRow);
+
+  if (STATE.agentConversation.length) {
+    wrap.appendChild(h("button",{class:"btn btn-ghost btn-sm",onclick:()=>{STATE.agentConversation=[];STATE.agentQuestion="";render();}},
+      "✕ Clear conversation"));
+  }
+
+  // Suggested questions
+  const suggestions=["What breaks if the main pipeline fails?","Which tables contain sensitive or PII data?","Who should I call for production incidents?","What are the known issues and workarounds?","What's the data refresh cadence for key tables?"];
+  const suggWrap=h("div",{style:{marginTop:16}});
+  suggWrap.appendChild(h("div",{style:{fontSize:11,fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".06em",marginBottom:8}},"Suggested Questions"));
+  const chips=h("div",{style:{display:"flex",flexWrap:"wrap",gap:6}});
+  suggestions.forEach(q=>{
+    chips.appendChild(h("button",{
+      class:"btn btn-secondary btn-sm",style:{fontSize:11,borderRadius:20},
+      onclick:()=>{ STATE.agentQuestion=q; questionInp.value=q; }
+    },q));
+  });
+  suggWrap.appendChild(chips);
+  wrap.appendChild(suggWrap);
+  return wrap;
+}
+
+// ─── Sources tab ──────────────────────────────────────────────
+
+async function loadSourcesStatus() {
+  if (STATE.sourcesLoading) return;
+  STATE.sourcesLoading = true; render();
+  const url = (STATE.app.serverUrl||"http://localhost:3001") + "/api/sources/status";
+  try {
+    const res = await fetch(url);
+    const json = await res.json();
+    STATE.sourcesStatus = json.connectors || {};
+  } catch(e) {
+    STATE.sourcesStatus = null;
+  }
+  STATE.sourcesLoading = false; render();
+}
+
+async function testConnector(id) {
+  const url = (STATE.app.serverUrl||"http://localhost:3001") + `/api/sources/test/${id}`;
+  try {
+    const res = await fetch(url, { method:"POST" });
+    const json = await res.json();
+    if (!STATE.sourcesStatus) STATE.sourcesStatus = {};
+    STATE.sourcesStatus[id] = { ...STATE.sourcesStatus[id], connected: json.ok, error: json.error||null, mode: json.mode||null, _testing: false };
+  } catch(e) {
+    if (!STATE.sourcesStatus) STATE.sourcesStatus = {};
+    STATE.sourcesStatus[id] = { ...STATE.sourcesStatus[id], connected: false, error: e.message, _testing: false };
+  }
+  render();
+}
+
+function renderAgentSources(proj) {
+  if (!proj.enabledSources) proj.enabledSources = ["github"];
+
+  const wrap = h("div", {style:{maxWidth:760}});
+  wrap.appendChild(h("h2", {style:{marginBottom:4}}, "Source Connectors"));
+  wrap.appendChild(h("p", {style:{color:"var(--text3)",fontSize:13,marginBottom:20}},
+    "Choose which sources the agent scans when populating KT and answering questions. Each source requires credentials in your .env file on the backend server."));
+
+  // Refresh button
+  const hdrRow = h("div",{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}});
+  hdrRow.appendChild(h("div",{style:{fontSize:12,color:"var(--text3)"}}, STATE.sourcesLoading ? "Loading…" : (STATE.sourcesStatus ? `Last checked: just now` : "Not yet loaded")));
+  const refreshBtn = h("button",{class:"btn btn-secondary btn-sm", onclick:()=>loadSourcesStatus()}, STATE.sourcesLoading ? "⏳ Checking…" : "↺ Refresh Status");
+  hdrRow.appendChild(refreshBtn);
+  wrap.appendChild(hdrRow);
+
+  // Connector definitions (static metadata for display even without server)
+  const CONNECTOR_META = {
+    github:     { icon:"🐙", label:"GitHub",     desc:"Repos, READMEs, issues, commits, file trees", mcpNote:"Uses MCP server when running (npx @modelcontextprotocol/server-github), falls back to REST", envRequired:["GITHUB_TOKEN"], envOptional:["GITHUB_ORG","GITHUB_MCP_URL"], sections:["biz_context","pipelines","data_sources","infrastructure","data_quality","known_issues","contacts"] },
+    confluence: { icon:"📝", label:"Confluence",  desc:"Wiki pages, runbooks, ADRs, design docs", mcpNote:"Optional: npx @atlassian/mcp-server-confluence", envRequired:["CONFLUENCE_URL","CONFLUENCE_EMAIL","CONFLUENCE_TOKEN"], envOptional:["CONFLUENCE_SPACE","CONFLUENCE_MCP_URL"], sections:["runbooks","known_issues","contacts","infrastructure","biz_context"] },
+    database:   { icon:"🗄️", label:"Database",    desc:"Table schemas, column metadata, row counts", mcpNote:"Postgres, MySQL, BigQuery supported", envRequired:["DB_DIALECT"], envOptional:["DB_HOST","DB_NAME","DB_USER","DB_PASSWORD","DB_SCHEMAS","BQ_PROJECT"], sections:["data_context","data_sources","data_quality"] },
+    jira:       { icon:"🎯", label:"Jira",         desc:"Epics, bugs, tech debt tickets", mcpNote:"Atlassian Cloud REST API", envRequired:["JIRA_URL","JIRA_EMAIL","JIRA_TOKEN"], envOptional:["JIRA_PROJECT"], sections:["known_issues","runbooks","biz_context"] },
+    notion:     { icon:"📓", label:"Notion",       desc:"Databases, pages, docs, runbooks", mcpNote:"Notion API v1", envRequired:["NOTION_TOKEN"], envOptional:["NOTION_DATABASE_ID"], sections:["runbooks","contacts","known_issues","biz_context"] },
+  };
+
+  Object.entries(CONNECTOR_META).forEach(([id, meta]) => {
+    const liveStatus = STATE.sourcesStatus?.[id];
+    const isEnabled = proj.enabledSources.includes(id);
+    const isConfigured = liveStatus?.configured ?? false;
+    const isConnected = liveStatus?.connected ?? false;
+
+    // Card
+    const card = h("div","card");
+    card.style.cssText = `padding:18px;margin-bottom:12px;border-left:3px solid ${isConnected?"var(--green)":isEnabled?"var(--accent)":"var(--border)"};transition:border-color .2s`;
+
+    // Header row
+    const headerRow = h("div",{style:{display:"flex",alignItems:"flex-start",gap:12}});
+
+    // Toggle
+    const toggle = h("label",{style:{display:"flex",alignItems:"center",cursor:"pointer",flexShrink:0,marginTop:2}});
+    const chk = h("input",{type:"checkbox",style:{width:"auto",margin:0,accentColor:"var(--accent)"}});
+    chk.checked = isEnabled;
+    chk.addEventListener("change", e => {
+      if (e.target.checked) {
+        if (!proj.enabledSources.includes(id)) proj.enabledSources.push(id);
+      } else {
+        proj.enabledSources = proj.enabledSources.filter(s => s !== id);
+      }
+      persist(); render();
+    });
+    toggle.appendChild(chk);
+    headerRow.appendChild(toggle);
+
+    // Icon + info
+    const info = h("div",{style:{flex:1}});
+    const titleRow = h("div",{style:{display:"flex",alignItems:"center",gap:8,marginBottom:4}});
+    titleRow.appendChild(h("span",{style:{fontSize:18}}, meta.icon));
+    titleRow.appendChild(h("span",{style:{fontWeight:700,fontSize:14}}, meta.label));
+
+    // Status pill
+    const pillColor = isConnected ? "var(--green)" : isConfigured ? "var(--amber)" : "var(--text4)";
+    const pillText = isConnected ? "● Connected" : isConfigured ? "◐ Configured" : "○ Not configured";
+    titleRow.appendChild(h("span",{style:{fontSize:11,color:pillColor,fontWeight:600}}, pillText));
+    if (liveStatus?.mode) titleRow.appendChild(h("span",{style:{fontSize:10,color:"var(--text3)",background:"var(--surface2)",padding:"2px 6px",borderRadius:10}}, "via "+liveStatus.mode.toUpperCase()));
+    info.appendChild(titleRow);
+
+    info.appendChild(h("p",{style:{fontSize:12,color:"var(--text2)",margin:"0 0 6px 0"}}, meta.desc));
+    info.appendChild(h("p",{style:{fontSize:11,color:"var(--text3)",margin:"0 0 8px 0"}}, "⚡ "+meta.mcpNote));
+
+    // Sections it populates
+    const sectionPills = h("div",{style:{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}});
+    meta.sections.forEach(secId => {
+      const sec = SECTION_DEFS.find(s=>s.id===secId);
+      if (sec) sectionPills.appendChild(h("span",{style:{fontSize:10,background:"var(--surface2)",color:"var(--text3)",padding:"2px 7px",borderRadius:10,border:"1px solid var(--border)"}}, sec.icon+" "+sec.label));
+    });
+    info.appendChild(sectionPills);
+
+    // Env vars required
+    if (!isConfigured && liveStatus !== undefined) {
+      const envNote = h("div",{style:{fontSize:11,color:"var(--amber)",marginBottom:6}});
+      envNote.appendChild(h("span",{style:{fontWeight:600}},"Required in .env: "));
+      envNote.appendChild(document.createTextNode(meta.envRequired.join("  •  ")));
+      info.appendChild(envNote);
+    }
+    if (liveStatus?.error) {
+      info.appendChild(h("div",{style:{fontSize:11,color:"var(--red)",marginBottom:6}}, "⚠ "+liveStatus.error));
+    }
+
+    headerRow.appendChild(info);
+
+    // Test button (only if configured)
+    if (isConfigured) {
+      const testBtn = h("button",{
+        class:"btn btn-sm btn-secondary",
+        style:{flexShrink:0,alignSelf:"flex-start"},
+        onclick: async () => {
+          testBtn.textContent = "Testing…"; testBtn.disabled = true;
+          await testConnector(id);
+        }
+      }, "Test");
+      headerRow.appendChild(testBtn);
+    }
+
+    card.appendChild(headerRow);
+    wrap.appendChild(card);
+  });
+
+  // Load status if not yet loaded
+  if (!STATE.sourcesStatus && !STATE.sourcesLoading) {
+    setTimeout(() => loadSourcesStatus(), 50);
+  }
+
+  // Footer note
+  wrap.appendChild(h("p",{style:{fontSize:12,color:"var(--text3)",marginTop:8}},
+    "Tip: enabled sources are used for both Populate KT and Ask Agent. Only configured sources (with valid .env credentials) will actually run."));
+
+  return wrap;
+}
+
+function renderAgentConfig(proj) {
+  const wrap=h("div",{style:{maxWidth:680}});
+  wrap.appendChild(h("h2",{style:{marginBottom:4}},"Agent Configuration"));
+  wrap.appendChild(h("p",{style:{color:"var(--text3)",fontSize:13,marginBottom:20}},"Configure how the agent scans and summarises your project. These settings are saved per project."));
+
+  const card=el("div","card"); card.style.cssText="padding:20px;margin-bottom:16px";
+  card.appendChild(h("h3",{style:{marginBottom:14}},"Backend Connection"));
+
+  const urlG=el("div","form-group");
+  urlG.appendChild(h("label",{},"Backend Server URL"));
+  urlG.appendChild(h("input",{type:"text",value:STATE.app.serverUrl||"http://localhost:3001",
+    oninput:e=>{STATE.app.serverUrl=e.target.value;persist();}}));
+  urlG.appendChild(h("p",{style:{fontSize:11,color:"var(--text3)",marginTop:4}},"Run `node server.js` in your project directory to start the backend."));
+  card.appendChild(urlG);
+
+  const checkBtn=h("button",{class:"btn btn-secondary",onclick:()=>checkServerStatus()},"↺ Check Connection");
+  card.appendChild(checkBtn);
+
+  if (STATE.serverStatus) {
+    const statusDiv=h("div",{style:{marginTop:12,padding:"10px 12px",background:"var(--surface2)",borderRadius:"var(--radius-sm)",fontSize:12}});
+    const ok=STATE.serverStatus.ok;
+    statusDiv.appendChild(h("div",{style:{fontWeight:600,color:ok?"var(--green)":"var(--red)",marginBottom:6}},ok?"✓ Backend connected":"✗ Backend offline"));
+    if (ok) {
+      const s=STATE.serverStatus.sources||{};
+      ["github","claude"].forEach(src=>{
+        const configured=s[src]?.configured;
+        const connected=s[src]?.connected;
+        statusDiv.appendChild(h("div",{style:{color:connected?"var(--green)":configured?"var(--amber)":"var(--red)"}},
+          `${connected?"✓":configured?"⚠":"✗"} ${src.charAt(0).toUpperCase()+src.slice(1)}: ${connected?"connected":configured?"configured but not verified":"not configured"}`));
+      });
+    } else {
+      statusDiv.appendChild(h("div",{style:{color:"var(--text3)"}},STATE.serverStatus.error||"Could not reach backend. Is the server running?"));
+    }
+    card.appendChild(statusDiv);
+  }
+  wrap.appendChild(card);
+
+  // Template config for this project
+  const tplCard=el("div","card"); tplCard.style.cssText="padding:20px";
+  tplCard.appendChild(h("h3",{style:{marginBottom:4}},"Active Prompt Template"));
+  tplCard.appendChild(h("p",{style:{fontSize:12,color:"var(--text3)",marginBottom:14}},"Control how the agent interprets and summarises GitHub data for this project."));
+
+  const activeTpl=STATE.app.templates.find(t=>t.id===proj.templateId)||STATE.app.templates[0];
+
+  const tplSel=el("div","form-group");
+  tplSel.appendChild(h("label",{},"Template"));
+  tplSel.appendChild(makeSelect(STATE.app.templates.map(t=>t.name),activeTpl.name,v=>{
+    const t=STATE.app.templates.find(t=>t.name===v); if(t){proj.templateId=t.id;persist();render();}
+  }));
+  tplCard.appendChild(tplSel);
+
+  if (activeTpl) {
+    const preview=h("div",{style:{background:"var(--surface2)",borderRadius:"var(--radius-sm)",padding:"12px 14px",fontSize:12}});
+    preview.appendChild(h("div",{style:{fontWeight:600,marginBottom:6}},activeTpl.name));
+    [["Scan Depth",activeTpl.scanDepth],["Focus",activeTpl.focusAreas?.join(", ")||"—"],["Output",activeTpl.outputStyle]].forEach(([k,v])=>{
+      preview.appendChild(h("div",{style:{color:"var(--text2)",marginBottom:2}},h("span",{style:{fontWeight:600,color:"var(--text3)"}},k+": "),v||"—"));
+    });
+    if (activeTpl.customContext) preview.appendChild(h("div",{style:{color:"var(--text3)",marginTop:6,fontStyle:"italic"}},'"'+activeTpl.customContext+'"'));
+    tplCard.appendChild(preview);
+  }
+  tplCard.appendChild(h("div",{style:{marginTop:12}},h("button",{class:"btn btn-secondary btn-sm",onclick:()=>{STATE.page="templates";render();}},"Manage Templates →")));
+  wrap.appendChild(tplCard);
+  return wrap;
+}
+
+// ─── Agent API calls ───────────────────────────────────────────
+
+async function checkServerStatus() {
+  const url=STATE.app.serverUrl||"http://localhost:3001";
+  try {
+    const res=await fetch(`${url}/api/status`);
+    const data=await res.json();
+    STATE.serverStatus={ ok:true, ...data };
+  } catch(e) {
+    STATE.serverStatus={ ok:false, error:e.message };
+  }
+  render();
+}
+
+async function runAgentPopulate(proj, data) {
+  if (STATE.agentRunning) return;
+  if (!proj.githubKeyword?.trim()) { alert("Enter a GitHub keyword first."); return; }
+  const url=(STATE.app.serverUrl||"http://localhost:3001")+"/api/agent/populate";
+  const tpl=STATE.app.templates.find(t=>t.id===proj.templateId);
+
+  STATE.agentRunning=true; STATE.agentLog=[]; render();
+
+  try {
+    const res=await fetch(url,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ projectKeyword:proj.githubKeyword, sections:proj.selectedSections||[], promptTemplate:tpl, enabledSources: proj.enabledSources||["github"] })
+    });
+
+    const reader=res.body.getReader(); const decoder=new TextDecoder();
+    let buf="";
+    while (true) {
+      const {done,value}=await reader.read();
+      if (done) break;
+      buf+=decoder.decode(value,{stream:true});
+      const lines=buf.split("\n");
+      buf=lines.pop();
+      for (const line of lines) {
+        if (line.startsWith("data:")) {
+          try {
+            const parsed=JSON.parse(line.slice(5).trim());
+            const eventLine=buf.split("\n").find(l=>l.startsWith("event:"));
+            // handle by checking the structure
+            if (parsed.message) STATE.agentLog.push({message:parsed.message,type:"log"});
+            if (parsed.drafts) {
+              data.agentDrafts=parsed.drafts;
+              STATE.agentLog.push({message:"✅ Done — navigate to KT Tracker to review drafts.",type:"log"});
+              persist();
+            }
+            if (parsed.error) STATE.agentLog.push({message:"Error: "+parsed.error,type:"error"});
+            render();
+          } catch {}
+        }
+      }
+    }
+  } catch(e) {
+    STATE.agentLog.push({message:"Connection failed: "+e.message+". Is the backend running?",type:"error"});
+  }
+  STATE.agentRunning=false; render();
+}
+
+async function runAgentAsk(proj, data) {
+  const q=(STATE.agentQuestion||"").trim();
+  if (!q) return;
+  if (STATE.agentRunning) return;
+
+  STATE.agentConversation.push({role:"user",content:q});
+  STATE.agentQuestion=""; STATE.agentRunning=true; render();
+
+  const url=(STATE.app.serverUrl||"http://localhost:3001")+"/api/agent/ask";
+  const ktContext=Object.entries(data.checklist).map(([secId,items])=>{
+    const sec=SECTION_DEFS.find(s=>s.id===secId);
+    const done=items.filter(i=>i.status==="Done");
+    if (!done.length) return "";
+    return `${sec?.label||secId}: ${done.map(i=>i.item+(i.notes?" ("+i.notes+")":"")).join(", ")}`;
+  }).filter(Boolean).join("\n");
+
+  try {
+    const res=await fetch(url,{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({ question:q, projectKeyword:proj.githubKeyword, ktContext,
+        conversationHistory:STATE.agentConversation.slice(-6).map(m=>({role:m.role,content:m.content})),
+        enabledSources: proj.enabledSources||["github"] })
+    });
+    const result=await res.json();
+    STATE.agentConversation.push({role:"assistant",content:result.answer,sources:result.sources});
+  } catch(e) {
+    STATE.agentConversation.push({role:"assistant",content:"Connection failed: "+e.message+". Is the backend running?",sources:[]});
+  }
+  STATE.agentRunning=false; render();
+}
+
+// ═══════════════════════════════════════════════════════
+// TEMPLATE MANAGER
+// ═══════════════════════════════════════════════════════
+
+function renderTemplates() {
+  const wrap=h("div",{style:{flex:1,overflowY:"auto",padding:"28px 32px"}});
+
+  const hdr=h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}});
+  hdr.appendChild(h("div",{},h("h1",{},"Prompt Templates"),h("p",{style:{fontSize:13,color:"var(--text3)",marginTop:3}},"Configure how the agent scans and summarises projects. Each template is reusable across projects.")));
+  hdr.appendChild(h("button",{class:"btn btn-primary",onclick:()=>{
+    STATE.editTemplateId="__new__"; render();
+  }},"+ New Template"));
+  wrap.appendChild(hdr);
+
+  if (STATE.editTemplateId) { wrap.appendChild(renderTemplateEditor()); }
+
+  const grid=h("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(340px,1fr))",gap:14}});
+  STATE.app.templates.forEach(tpl=>{
+    const isBuiltIn=DEFAULT_TEMPLATES.some(d=>d.id===tpl.id);
+    const card=el("div","card"); card.style.cssText="padding:18px;border-top:3px solid var(--accent)";
+    const row=h("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}});
+    const info=h("div",{});
+    info.appendChild(h("div",{style:{fontWeight:700,fontSize:15,marginBottom:2}},tpl.name));
+    if (isBuiltIn) info.appendChild(h("span",{class:"tag",style:{background:"var(--surface2)",color:"var(--text3)",border:"1px solid var(--border)",fontSize:10}},"Built-in"));
+    row.appendChild(info);
+    const btns=h("div",{style:{display:"flex",gap:6}});
+    btns.appendChild(h("button",{class:"btn btn-secondary btn-sm",onclick:()=>{STATE.editTemplateId=tpl.id;render();}},"Edit"));
+    if (!isBuiltIn) btns.appendChild(h("button",{class:"btn btn-danger btn-sm",onclick:()=>{
+      if(confirm("Delete template?")){ STATE.app.templates=STATE.app.templates.filter(t=>t.id!==tpl.id);persist();render(); }
+    }},"Delete"));
+    row.appendChild(btns);
+    card.appendChild(row);
+
+    const meta=[
+      ["Scan Depth",tpl.scanDepth],
+      ["Focus Areas",(tpl.focusAreas||[]).join(", ")||"—"],
+      ["Output Style",tpl.outputStyle],
+    ];
+    meta.forEach(([k,v])=>{
+      const row2=h("div",{style:{display:"flex",gap:8,fontSize:12,marginBottom:4}});
+      row2.appendChild(h("span",{style:{fontWeight:600,color:"var(--text3)",minWidth:90}},k+":"));
+      row2.appendChild(h("span",{style:{color:"var(--text2)"}},v));
+      card.appendChild(row2);
+    });
+    if (tpl.customContext) card.appendChild(h("p",{style:{fontSize:12,color:"var(--text3)",fontStyle:"italic",marginTop:6,borderTop:"1px solid var(--border)",paddingTop:6}},'"'+tpl.customContext+'"'));
+
+    const sectionOverrides=Object.entries(tpl.perSection||{});
+    if (sectionOverrides.length) {
+      card.appendChild(h("div",{style:{fontSize:11,fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".06em",marginTop:8,marginBottom:4}},"Per-section overrides"));
+      const chips2=h("div",{style:{display:"flex",flexWrap:"wrap",gap:4}});
+      sectionOverrides.forEach(([secId,depth])=>{
+        const sec=SECTION_DEFS.find(s=>s.id===secId);
+        chips2.appendChild(h("span",{class:"tag",style:{background:"var(--surface2)",color:"var(--text2)",border:"1px solid var(--border)",fontSize:10}},(sec?.label||secId)+": "+depth));
+      });
+      card.appendChild(chips2);
+    }
+    grid.appendChild(card);
+  });
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function renderTemplateEditor() {
+  const isNew=STATE.editTemplateId==="__new__";
+  const existing=isNew?null:STATE.app.templates.find(t=>t.id===STATE.editTemplateId);
+  let form=existing?JSON.parse(JSON.stringify(existing)):{ id:uid(), name:"", scanDepth:"Medium", focusAreas:[], outputStyle:"Short paragraphs", customContext:"", perSection:{} };
+
+  const overlay=h("div",{style:{position:"fixed",inset:0,background:"rgba(15,23,42,.4)",zIndex:100,display:"flex",alignItems:"center",justifyContent:"center"}});
+  const modal=el("div","card"); modal.style.cssText="width:560px;max-width:95vw;padding:28px;max-height:90vh;overflow-y:auto";
+  modal.appendChild(h("h2",{style:{marginBottom:20}},isNew?"New Template":"Edit Template"));
+
+  // Name
+  const nameG=el("div","form-group");
+  nameG.appendChild(h("label",{},"Template Name *"));
+  nameG.appendChild(h("input",{type:"text",value:form.name,placeholder:"e.g. Fintech DE Handoff",oninput:e=>form.name=e.target.value}));
+  modal.appendChild(nameG);
+
+  const g2=h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}});
+
+  const sdG=el("div","form-group"); sdG.style.marginBottom=0;
+  sdG.appendChild(h("label",{},"Scan Depth"));
+  sdG.appendChild(makeSelect(["Surface","Medium","Deep"],form.scanDepth,v=>form.scanDepth=v));
+  g2.appendChild(sdG);
+
+  const osG=el("div","form-group"); osG.style.marginBottom=0;
+  osG.appendChild(h("label",{},"Output Style"));
+  osG.appendChild(makeSelect(["Bullet points","Short paragraphs","Structured table"],form.outputStyle,v=>form.outputStyle=v));
+  g2.appendChild(osG);
+  modal.appendChild(g2);
+  modal.appendChild(h("div",{style:{height:14}}));
+
+  // Focus areas
+  const focusG=el("div","form-group");
+  focusG.appendChild(h("label",{},"Focus Areas"));
+  const focusOptions=["Code structure","Data inventory","Documentation","Known issues","Security signals","Business context","Contacts & owners"];
+  const focusWrap=h("div",{style:{display:"flex",flexWrap:"wrap",gap:6}});
+  focusOptions.forEach(opt=>{
+    const checked=form.focusAreas.includes(opt);
+    const chip=h("label",{style:{display:"flex",alignItems:"center",gap:5,background:checked?"var(--accent-bg)":"var(--surface2)",border:`1px solid ${checked?"var(--accent-border)":"var(--border)"}`,borderRadius:20,padding:"3px 10px",cursor:"pointer",fontSize:12,color:checked?"var(--accent2)":"var(--text2)",transition:"all .15s"}});
+    const chk=h("input",{type:"checkbox",style:{width:"auto",margin:0,accentColor:"var(--accent)"}});
+    chk.checked=checked;
+    chk.addEventListener("change",e=>{ if(e.target.checked) form.focusAreas.push(opt); else form.focusAreas=form.focusAreas.filter(f=>f!==opt); });
+    chip.appendChild(chk); chip.appendChild(h("span",{},opt)); focusWrap.appendChild(chip);
+  });
+  focusG.appendChild(focusWrap);
+  modal.appendChild(focusG);
+
+  // Custom context
+  const ccG=el("div","form-group");
+  ccG.appendChild(h("label",{},"Custom Context (injected into every agent prompt)"));
+  const ccTa=h("textarea",{rows:3,placeholder:"e.g. This is a real-time payment processing pipeline. Focus on latency, idempotency and PII handling.",oninput:e=>form.customContext=e.target.value});
+  ccTa.value=form.customContext||"";
+  ccG.appendChild(ccTa); modal.appendChild(ccG);
+
+  // Per-section depth
+  const psdG=el("div","form-group");
+  psdG.appendChild(h("label",{},"Per-section Depth Overrides"));
+  psdG.appendChild(h("p",{style:{fontSize:11,color:"var(--text3)",marginBottom:8}},"Override scan depth for specific sections. Leave blank to use global scan depth."));
+  const psdGrid=h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}});
+  SECTION_DEFS.filter(s=>!s.isSpecial).forEach(sec=>{
+    const row=h("div",{style:{display:"flex",alignItems:"center",gap:8}});
+    row.appendChild(h("span",{style:{fontSize:12,color:"var(--text2)",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},sec.icon+" "+sec.label));
+    row.appendChild(makeSelect(["—","Surface","Medium","Deep"],form.perSection[sec.id]||"—",v=>{ if(v==="—") delete form.perSection[sec.id]; else form.perSection[sec.id]=v; }));
+    psdGrid.appendChild(row);
+  });
+  psdG.appendChild(psdGrid);
+  modal.appendChild(psdG);
+
+  const btns=h("div",{style:{display:"flex",gap:8,justifyContent:"flex-end",marginTop:20}});
+  btns.appendChild(h("button",{class:"btn btn-secondary",onclick:()=>{ STATE.editTemplateId=null; render(); }},"Cancel"));
+  btns.appendChild(h("button",{class:"btn btn-primary",onclick:()=>{
+    if (!form.name.trim()) { alert("Template name required"); return; }
+    if (isNew) STATE.app.templates.push(form);
+    else { const idx=STATE.app.templates.findIndex(t=>t.id===form.id); if(idx>-1) STATE.app.templates[idx]=form; }
+    STATE.editTemplateId=null; persist(); render();
+  }},isNew?"Create Template":"Save Changes"));
+  modal.appendChild(btns);
+
+  overlay.appendChild(modal);
+  overlay.onclick=e=>{ if(e.target===overlay){STATE.editTemplateId=null;render();} };
+  return overlay;
+}
+
+// ═══════════════════════════════════════════════════════
+// HOW TO USE
+// ═══════════════════════════════════════════════════════
+
+function renderGuide() {
+  const wrap=h("div",{style:{flex:1,overflowY:"auto",padding:"32px"}});
+  const inner=h("div",{style:{maxWidth:780,margin:"0 auto"}});
+
+  inner.appendChild(h("div",{style:{marginBottom:32}},
+    h("h1",{style:{marginBottom:8}},"How to Use KT Platform"),
+    h("p",{style:{fontSize:15,color:"var(--text2)",lineHeight:1.7}},"A step-by-step guide to running a robust Data Engineering knowledge transfer using this tool.")
+  ));
+
+  const sections=[
+    { icon:"🚀", title:"Getting Started", steps:[
+      { title:"Create a project", body:"Click '+ New Project' on the Dashboard. Enter the project name, tag it to a client, set the outgoing and incoming team names, and choose a target handover date." },
+      { title:"Set a GitHub keyword", body:"Add a keyword that matches your repository name (e.g. 'orders-pipeline'). This is what the Agent uses to find the right repos when scanning GitHub." },
+      { title:"Choose a template", body:"Select a prompt template that matches your project type. 'Full DE Project' works for most cases. Compliance-heavy projects should use 'Compliance-Sensitive'." },
+    ]},
+    { icon:"📋", title:"KT Tracker", steps:[
+      { title:"Work through sections in order", body:"Start with Business Context and Data Context — these anchor everything else. Each section has smart dropdowns specific to that section type (e.g. Pipeline Type, Frequency for Pipelines)." },
+      { title:"Paste resource links", body:"Every checklist item has a Resource Link field. Paste the actual Confluence page URL, DAG link, repo URL, or table name. This turns the tracker into a live index of your real assets." },
+      { title:"Use statuses accurately", body:"Mark items In Progress when actively being documented, Done when verified, and Blocked when there's an impediment. Blocked items surface in the Day 1 Kit and Sign-off." },
+      { title:"Log KT sessions as you go", body:"After every handover meeting, log it in the KT Sessions section with topic, attendees, and any open questions raised. Open questions are auto-surfaced in the Day 1 Kit." },
+      { title:"Complete Reverse KT", body:"For each topic in the Reverse KT section, record when the incoming team has demonstrated their understanding. Set status to Passed only when you're confident they can operate independently." },
+    ]},
+    { icon:"🤖", title:"Agent Studio", steps:[
+      { title:"Start the backend", body:"Open a terminal in the project folder and run: npm install && node server.js. The backend must be running for Agent features. Open the Configuration tab to verify connection." },
+      { title:"Run Populate", body:"Go to Populate KT tab, confirm your GitHub keyword and template, select which sections to populate, then click Run Agent. The agent scans GitHub at gist level — README, file tree, open issues — and drafts content for each section." },
+      { title:"Review drafts in the tracker", body:"After the agent runs, banner notifications appear at the top of each section in the KT Tracker. Review the draft, click Accept to mark items In Progress, or Skip to dismiss." },
+      { title:"Ask questions", body:"Use the Ask Agent tab to query the project in natural language. The agent answers using GitHub data and your KT documentation. It cites sources so you know where information came from." },
+    ]},
+    { icon:"🎛", title:"Prompt Templates", steps:[
+      { title:"Choose the right template", body:"Templates control how the agent interprets GitHub data. 'Surface' gives a quick gist. 'Deep' produces detailed drafts. Match depth to how much time the outgoing team has." },
+      { title:"Create custom templates", body:"Click '+ New Template' in the Templates page. Set focus areas (e.g. 'Security signals' for compliance projects), add custom context that gets injected into every agent prompt, and override depth per section." },
+      { title:"Per-section depth overrides", body:"You might want 'Deep' for Known Issues (critical for new team) but 'Surface' for Contacts (team will introduce themselves). Configure per-section overrides in the template editor." },
+    ]},
+    { icon:"✅", title:"Sign-off Process", steps:[
+      { title:"Complete the Day 1 Kit first", body:"The Day 1 Kit auto-compiles from your filled sections. Before proceeding to sign-off, review it as the incoming team would — are the critical pipelines listed? Are contacts there? Are runbooks ready?" },
+      { title:"Resolve or waive blocked items", body:"Blocked items must either be resolved (status changed) or explicitly documented in the Caveats field of the Sign-off section. Never sign off with silent unknowns." },
+      { title:"Both parties must confirm", body:"The outgoing team lead and incoming team lead both check their respective confirmation boxes. This creates a formal record of the handover date and any documented caveats." },
+    ]},
+    { icon:"💡", title:"KT Best Practices", steps:[
+      { title:"Start KT documentation during the project, not at the end", body:"The best KTs are built incrementally. Add runbook entries when incidents happen. Document decisions when they're made. Don't leave it all for the last 2 weeks." },
+      { title:"The incoming team should drive", body:"Reverse KT is more important than KT. The outgoing team explaining things is useful; the incoming team explaining things back is what proves understanding." },
+      { title:"Blocked doesn't mean stuck", body:"Mark things Blocked early. It surfaces gaps that need escalation — access not granted, document doesn't exist, key person unavailable — giving time to resolve before the handover deadline." },
+      { title:"Link everything, explain the important things", body:"Links are the backbone of the tracker. But links alone don't transfer context. For the 3-5 most critical items, write enough notes that someone at 2am can understand without calling anyone." },
+    ]},
+  ];
+
+  sections.forEach((sec,si)=>{
+    const block=h("div",{style:{marginBottom:36}});
+    block.appendChild(h("div",{style:{display:"flex",alignItems:"center",gap:10,marginBottom:16,paddingBottom:10,borderBottom:"2px solid var(--accent-border)"}},
+      h("span",{style:{fontSize:22}},sec.icon),
+      h("h2",{style:{color:"var(--accent2)"}},sec.title)
+    ));
+    sec.steps.forEach((step,i)=>{
+      const card=el("div","card"); card.style.cssText="padding:16px 18px;margin-bottom:10px;display:flex;gap:14px;align-items:flex-start";
+      card.appendChild(h("div",{style:{width:24,height:24,borderRadius:"50%",background:"var(--accent-bg)",border:"2px solid var(--accent-border)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"var(--accent2)",flexShrink:0,marginTop:1}},(i+1).toString()));
+      const txt=h("div",{});
+      txt.appendChild(h("div",{style:{fontWeight:600,fontSize:14,marginBottom:4}},step.title));
+      txt.appendChild(h("p",{style:{fontSize:13,color:"var(--text2)",lineHeight:1.6}},step.body));
+      card.appendChild(txt);
+      block.appendChild(card);
+    });
+    inner.appendChild(block);
+  });
+
+  // Quick ref card
+  const qr=el("div","card"); qr.style.cssText="padding:20px;border-top:3px solid var(--accent);margin-top:8px";
+  qr.appendChild(h("h3",{style:{marginBottom:14}},"⌨ Quick Reference"));
+  const qrGrid=h("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}});
+  [
+    ["Start backend","npm install && node server.js"],
+    ["Check backend","Agent Studio → Configuration → Check Connection"],
+    ["Run agent","Agent Studio → Populate KT → Run Agent"],
+    ["Review drafts","KT Tracker → section banners → Accept/Skip"],
+    ["Ask questions","Agent Studio → Ask Agent"],
+    ["Sign off","KT Tracker → Sign-off section"],
+  ].forEach(([label,value])=>{
+    qrGrid.appendChild(h("div",{style:{display:"flex",flexDirection:"column",gap:2}},
+      h("span",{style:{fontSize:11,fontWeight:700,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".05em"}},label),
+      h("span",{style:{fontSize:12,color:"var(--text2)",fontFamily:"var(--mono)",background:"var(--surface2)",padding:"3px 8px",borderRadius:4,border:"1px solid var(--border)"}},value)
+    ));
+  });
+  qr.appendChild(qrGrid);
+  inner.appendChild(qr);
+
+  wrap.appendChild(inner);
+  return wrap;
+}
+
+// ═══════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════
+
+checkServerStatus();
+render();
+</script>
+</body>
+</html>

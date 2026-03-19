@@ -1,0 +1,62 @@
+{
+  "sectionId": "reverse_kt",
+  "savedAt": "2026-03-09T03:49:57.616Z",
+  "items": [
+    {
+      "item": "Business context & data context walkthrough",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    },
+    {
+      "item": "Pipeline inventory & dependency explanation",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    },
+    {
+      "item": "Environment setup & access walkthrough",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    },
+    {
+      "item": "Infrastructure & deployment demo",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    },
+    {
+      "item": "Runbook execution (live incident simulation)",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    },
+    {
+      "item": "Data quality rules & monitoring demo",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    },
+    {
+      "item": "End-to-end pipeline run & troubleshooting",
+      "status": "Not Started",
+      "complexity": "Intermediate",
+      "demonstratedBy": "",
+      "notes": "",
+      "link": ""
+    }
+  ]
+}
